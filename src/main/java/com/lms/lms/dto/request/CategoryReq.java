@@ -15,4 +15,6 @@ public class CategoryReq {
     @Column(length = 500, nullable = false)
     @NotEmpty(message = "Category Description should not be null")
     private String description;
+
+    private String id;
 }
