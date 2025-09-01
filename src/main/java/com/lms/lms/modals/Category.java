@@ -12,13 +12,13 @@ import lombok.NoArgsConstructor;
 public class Category {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
     @Column(unique = true, nullable = false)
     private String slug;
-    @Column(unique = true)
+    @Column(unique = false, nullable = false)
     private String name;
-    @Column(unique = true)
+    @Column(nullable = false)
     private String description;
 }

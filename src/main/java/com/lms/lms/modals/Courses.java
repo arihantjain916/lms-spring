@@ -22,11 +22,12 @@ public class Courses {
     private String slug;
     private String description;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "category_id",  nullable = false)
     private Category category;
 
-    @ManyToOne
-    private User instructor;
+//    @ManyToOne
+//    private User instructor;
 
 //    @ManyToOne
 //    private PricingPlan pricingPlan;
