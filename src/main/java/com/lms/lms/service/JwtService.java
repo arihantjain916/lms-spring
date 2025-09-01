@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class JwtService {
-    private String key = "jkbcidbc!@#$%^&1541AFVGYV";
+    private String key = "jkbcidbc!@#$%^&1541AFVGYVASDFGHJKL@#$%";
 
     public String generateToken(String id){
 
@@ -30,7 +30,7 @@ public class JwtService {
     }
 
     private SecretKey generateKey(){
-        byte[] keyBytes = Base64.getDecoder().decode(key);
+        byte[] keyBytes = key.getBytes();
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
@@ -44,8 +44,8 @@ public class JwtService {
 
     public boolean validateToken(String token, UserDetails userDetails) {
 
-        final String email = extractUsername(token);
-        return (email.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        final String id = extractUsername(token);
+        return (id.equals(userDetails.getUsername()) && !isTokenExpired(token));
     }
 
     private  boolean isTokenExpired(String token) {

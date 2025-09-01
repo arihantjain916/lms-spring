@@ -26,4 +26,16 @@ public class UserDetailsService implements org.springframework.security.core.use
            throw  new UsernameNotFoundException("User not found");
        }
     }
+
+    public UserDetails loadUserById(String id) throws UsernameNotFoundException {
+        try{
+            User user = userRepo.findById(id).orElse(null);
+            if (user == null) {
+                throw new UsernameNotFoundException("User Not Found");
+            }
+            return new UserPrincipal(user);
+        } catch (Exception e) {
+            throw  new UsernameNotFoundException("User not found");
+        }
+    }
 }

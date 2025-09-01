@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
 
 @SpringBootApplication
 @RestController
@@ -25,5 +24,10 @@ public class LearningManagementSystemApplication {
         ZonedDateTime istTime = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
         var date = istTime.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss"));
         return ResponseEntity.ok(new Default("Application is running", true, date));
+    }
+
+    @GetMapping("/test")
+    public String test(){
+        return "JWT VALID";
     }
 }
