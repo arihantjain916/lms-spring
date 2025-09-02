@@ -31,6 +31,10 @@ public class Courses {
     @JoinColumn(name = "category_id",  nullable = false)
     private Category category;
 
+    @ManyToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "user_id",  nullable = false)
+    private User user;
+
 //    @ManyToOne
 //    private User instructor;
 

@@ -1,13 +1,19 @@
 package com.lms.lms.controllers;
 
 import com.lms.lms.dto.request.CourseReq;
+import com.lms.lms.dto.response.CourseRes;
 import com.lms.lms.dto.response.Default;
+import com.lms.lms.mappers.CourseMapper;
 import com.lms.lms.modals.Courses;
 import com.lms.lms.repo.CategoryRepo;
 import com.lms.lms.repo.CoursesRepo;
+import com.lms.lms.repo.UserRepo;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,10 +27,19 @@ public class CourseController {
     @Autowired
     private CategoryRepo categoryRepo;
 
+    @Autowired
+    private UserRepo userRepo;
+
+    @Autowired
+    private CourseMapper courseMapper;
+
     @GetMapping("/all")
-    public List<Courses> getCourses()
+    public Iterable<CourseRes> getCourses()
     {
-        return coursesRepo.findAll();
+        return coursesRepo.findAll()
+                .stream()
+                .map(course -> courseMapper.toDto(course))
+                .toList();
     }
 
     @GetMapping("/{id}")
@@ -36,12 +51,20 @@ public class CourseController {
     @PostMapping("/add")
     public ResponseEntity<?> addCourse(@Valid @RequestBody CourseReq courses){
         try{
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            UserDetails user = (UserDetails) authentication.getPrincipal();
+
             var slug= courses.getSlug();
 
             var isSlugExist = coursesRepo.findBySlug(slug).orElse(null);
 
             var isCategoryExist = categoryRepo.findById(courses.getCategoryId()).orElse(null);
 
+            var isUserExist = userRepo.findById(user.getUsername()).orElse(null);
+
+            if(isUserExist == null){
+                return ResponseEntity.badRequest().body(new Default("User don't exist", false, null));
+            }
 
             if(isSlugExist != null){
                 return ResponseEntity.badRequest().body(new Default("Slug Already Exist. Please try with another one", false, null));
@@ -56,6 +79,7 @@ public class CourseController {
             course.setSlug(slug);
             course.setDescription(courses.getDescription());
             course.setCategory(isCategoryExist);
+            course.setUser(isUserExist);
             coursesRepo.save(course);
 
             return ResponseEntity.ok().body(new Default("Course Added Successfully", true, null));
