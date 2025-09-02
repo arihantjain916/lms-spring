@@ -13,4 +13,6 @@ public class CourseRes {
 
     private UserRes user;
 
+    private CustomCategoryRes category;
 }
+
