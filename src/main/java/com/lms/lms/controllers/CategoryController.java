@@ -63,7 +63,6 @@ public class CategoryController {
     }
 
     @PutMapping("/update")
-    @PostMapping("/update")
     public ResponseEntity<Object> updateCategory(@Valid @RequestBody CategoryReq categoryReq) {
         try {
             Category existingCategory = categoryRepo.findById(categoryReq.getId()).orElse(null);

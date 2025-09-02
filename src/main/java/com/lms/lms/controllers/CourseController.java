@@ -34,7 +34,7 @@ public class CourseController {
     }
 
     @PostMapping("/add")
-    public ResponseEntity<?> addProduct(@Valid @RequestBody CourseReq courses){
+    public ResponseEntity<?> addCourse(@Valid @RequestBody CourseReq courses){
         try{
             var slug= courses.getSlug();
 
@@ -60,6 +60,36 @@ public class CourseController {
 
             return ResponseEntity.ok().body(new Default("Course Added Successfully", true, null));
         } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null));
+        }
+    }
+
+    @PutMapping("/update")
+    public ResponseEntity<?> updateCourse (@Valid @RequestBody CourseReq course){
+        try{
+            var id = course.getId();
+
+            var isCourseExist = coursesRepo.findById(id).orElse(null);
+
+            var isCategoryExist = categoryRepo.findById(course.getCategoryId()).orElse(null);
+
+            if(isCourseExist == null){
+                return ResponseEntity.badRequest().body(new Default("Invalid Course Id", false, null));
+            }
+
+            if(isCategoryExist == null){
+                return ResponseEntity.badRequest().body(new Default("Category Don't Exist", false, null));
+            }
+
+            isCourseExist.setTitle(course.getTitle());
+            isCourseExist.setSlug(course.getSlug());
+            isCourseExist.setDescription(course.getDescription());
+            isCourseExist.setCategory(isCategoryExist);
+            coursesRepo.save(isCourseExist);
+
+            return ResponseEntity.ok().body(new Default("Course Updated Successfully", true, null));
+        }
+        catch (Exception e) {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null));
         }
     }

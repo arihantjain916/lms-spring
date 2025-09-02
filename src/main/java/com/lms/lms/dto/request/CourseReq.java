@@ -20,4 +20,6 @@ public class CourseReq {
     @NotBlank(message = "Course Category is required")
     private String categoryId;
 
+    private Long id;
+
 }
