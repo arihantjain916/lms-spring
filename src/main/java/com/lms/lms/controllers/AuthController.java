@@ -71,7 +71,7 @@ public class AuthController {
 
             if (auth.isAuthenticated()){
                 var token = jwtService.generateToken(isUserExist.getId());
-                return ResponseEntity.ok(new LoginRes("User Created Successfully", true, token));
+                return ResponseEntity.ok(new LoginRes("User Login Successfully", true, token));
             }
             return new ResponseEntity<>(new Default("Invalid Credentials", false, null), HttpStatus.UNAUTHORIZED);
         }
