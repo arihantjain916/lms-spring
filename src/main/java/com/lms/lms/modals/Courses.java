@@ -18,8 +18,13 @@ public class Courses {
     @GeneratedValue
     private Long id;
 
+    @Column(nullable = false)
     private String title;
+
+    @Column(unique = true, nullable = false)
     private String slug;
+
+    @Column(nullable = false)
     private String description;
 
     @ManyToOne(cascade = CascadeType.ALL)
