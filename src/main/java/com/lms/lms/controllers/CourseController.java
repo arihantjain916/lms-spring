@@ -16,8 +16,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/course")
 public class CourseController {
@@ -46,6 +44,22 @@ public class CourseController {
     public Courses getCourseById(@PathVariable Long id)
     {
         return coursesRepo.findById(id).orElse(null);
+    }
+
+    @GetMapping("/category/{category_id}")
+    public Iterable<CourseRes> getCoursebyCateoryId(@PathVariable String category_id){
+       return coursesRepo.findByCategoryId(category_id)
+               .stream()
+               .map(course -> courseMapper.toDto(course))
+               .toList();
+    }
+
+    @GetMapping("/slug/{slug}")
+    public Iterable<CourseRes> getCoursebySlug(@PathVariable String slug){
+        return coursesRepo.findAllBySlug(slug)
+                .stream()
+                .map(course -> courseMapper.toDto(course))
+                .toList();
     }
 
     @PostMapping("/add")
