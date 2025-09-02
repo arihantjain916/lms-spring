@@ -3,6 +3,7 @@ package com.lms.lms.controllers;
 import com.github.slugify.Slugify;
 import com.lms.lms.dto.request.CategoryReq;
 import com.lms.lms.dto.response.Default;
+import com.lms.lms.dto.response.CategoryRes;
 import com.lms.lms.modals.Category;
 import com.lms.lms.repo.CategoryRepo;
 import jakarta.validation.Valid;
@@ -10,9 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/category")
@@ -22,9 +23,21 @@ public class CategoryController {
     private CategoryRepo categoryRepo;
 
     @GetMapping("")
-
-    public ResponseEntity<List<Category>> getAll() {
-        List<Category> categories = categoryRepo.findAll();
+    public ResponseEntity<List<CategoryRes>> getAll() {
+        List<CategoryRes> categories = categoryRepo.findCategoryCourseCounts()
+                .stream()
+                .map(result -> {
+                    Category category = (Category) result[0];
+                    Long courseCount = (Long) result[1];
+                    return new CategoryRes(
+                            category.getId(),
+                            category.getName(),
+                            category.getDescription(),
+                            courseCount
+                    );
+                })
+                .collect(Collectors.toList());
+                
         return new ResponseEntity<>(categories, HttpStatus.OK);
     }
 
