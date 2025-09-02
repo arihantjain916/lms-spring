@@ -3,6 +3,7 @@ package com.lms.lms.controllers;
 import com.lms.lms.dto.request.CourseReq;
 import com.lms.lms.dto.response.Default;
 import com.lms.lms.modals.Courses;
+import com.lms.lms.repo.CategoryRepo;
 import com.lms.lms.repo.CoursesRepo;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,33 +13,49 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/courses")
+@RequestMapping("/course")
 public class CourseController {
     @Autowired
     private CoursesRepo coursesRepo;
 
-    @GetMapping("")
+    @Autowired
+    private CategoryRepo categoryRepo;
+
+    @GetMapping("/all")
     public List<Courses> getCourses()
     {
         return coursesRepo.findAll();
     }
 
+    @GetMapping("/{id}")
+    public Courses getCourseById(@PathVariable Long id)
+    {
+        return coursesRepo.findById(id).orElse(null);
+    }
+
     @PostMapping("/add")
     public ResponseEntity<?> addProduct(@Valid @RequestBody CourseReq courses){
         try{
-
             var slug= courses.getSlug();
 
             var isSlugExist = coursesRepo.findBySlug(slug).orElse(null);
 
+            var isCategoryExist = categoryRepo.findById(courses.getCategoryId()).orElse(null);
+
+
             if(isSlugExist != null){
                 return ResponseEntity.badRequest().body(new Default("Slug Already Exist. Please try with another one", false, null));
+            }
+
+            if(isCategoryExist == null){
+                return ResponseEntity.badRequest().body(new Default("Category Don't Exist", false, null));
             }
 
             Courses course = new Courses();
             course.setTitle(courses.getTitle());
             course.setSlug(slug);
             course.setDescription(courses.getDescription());
+            course.setCategory(isCategoryExist);
             coursesRepo.save(course);
 
             return ResponseEntity.ok().body(new Default("Course Added Successfully", true, null));
