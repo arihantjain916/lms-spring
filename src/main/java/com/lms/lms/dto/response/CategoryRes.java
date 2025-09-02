@@ -8,6 +8,8 @@ import lombok.Data;
 public class CategoryRes {
     private String id;
     private String name;
+    private String slug;
+    private String icon;
     private String description;
     private long courseCount;
 }

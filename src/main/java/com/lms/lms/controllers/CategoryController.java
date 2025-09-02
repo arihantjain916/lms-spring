@@ -32,6 +32,8 @@ public class CategoryController {
                     return new CategoryRes(
                             category.getId(),
                             category.getName(),
+                            category.getSlug(),
+                            category.getIcon(),
                             category.getDescription(),
                             courseCount
                     );

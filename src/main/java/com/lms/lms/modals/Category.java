@@ -25,6 +25,9 @@ public class Category {
     @Column(nullable = false)
     private String description;
 
+    @Column(nullable = true)
+    private String icon = "Code";
+
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Courses> courses = new ArrayList<>();
 }
