@@ -14,4 +14,6 @@ public class Register {
     private String password;
     @NotBlank(message = "Email is required")
     private String email;
+
+    private String name;
 }

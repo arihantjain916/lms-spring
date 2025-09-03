@@ -50,6 +50,7 @@ public class AuthController {
             user.setUsername(register.getUsername());
             user.setEmail(register.getEmail());
             user.setPassword(pass);
+            user.setName(register.getName());
             userRepo.save(user);
             return ResponseEntity.ok(new Default("User Created Successfully", true, null, null));
         }
