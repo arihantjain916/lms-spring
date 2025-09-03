@@ -38,11 +38,11 @@ public class Courses {
     @JoinColumn(name = "user_id",  nullable = false)
     private User user;
 
-//    @ManyToOne
-//    private User instructor;
+    @ManyToOne
+    private User instructor;
 
-//    @ManyToOne
-//    private PricingPlan pricingPlan;
+    @ManyToOne
+    private Pricing_Plans pricingPlan;
 //
     @Column(nullable = false, updatable = false)
     @CreationTimestamp
