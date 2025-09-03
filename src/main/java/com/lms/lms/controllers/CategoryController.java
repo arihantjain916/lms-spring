@@ -2,6 +2,7 @@ package com.lms.lms.controllers;
 
 import com.github.slugify.Slugify;
 import com.lms.lms.dto.request.CategoryReq;
+import com.lms.lms.dto.response.CourseRes;
 import com.lms.lms.dto.response.Default;
 import com.lms.lms.dto.response.CategoryRes;
 import com.lms.lms.modals.Category;
@@ -23,24 +24,42 @@ public class CategoryController {
     private CategoryRepo categoryRepo;
 
     @GetMapping("")
-    public ResponseEntity<List<CategoryRes>> getAll() {
+    public ResponseEntity<Default> getAll() {
         List<CategoryRes> categories = categoryRepo.findCategoryCourseCounts()
                 .stream()
                 .map(result -> {
                     Category category = (Category) result[0];
                     Long courseCount = (Long) result[1];
-                    return new CategoryRes(
+                    return new  CategoryRes(
                             category.getId(),
                             category.getName(),
                             category.getSlug(),
                             category.getIcon(),
                             category.getDescription(),
-                            courseCount
+                            courseCount,
+                            category.getIsFeatured()
                     );
+
                 })
                 .collect(Collectors.toList());
-                
-        return new ResponseEntity<>(categories, HttpStatus.OK);
+
+        return new ResponseEntity<>(new Default("Category Fetched Successfully", true, null, categories), HttpStatus.OK);
+    }
+
+    @GetMapping("/{slug}")
+
+    public ResponseEntity<?> getCategoryBySlug(@PathVariable String slug){
+        try{
+            Category category = categoryRepo.findBySlug(slug).orElse(null);
+            if(category == null){
+                return ResponseEntity.badRequest().body(new Default("Category does not exist", false, null, null));
+            }
+            var courseLength = category.getCourses().size();
+            CategoryRes categoryRes = new CategoryRes(category.getId(), category.getName(), category.getSlug(), category.getIcon(), category.getDescription(), courseLength, category.getIsFeatured());
+            return ResponseEntity.ok().body(new Default("Category Found", true, null, categoryRes));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
     }
 
     @PostMapping("/add")
@@ -70,10 +89,10 @@ public class CategoryController {
 
             categoryRepo.save(category);
             return ResponseEntity.ok()
-                    .body(new Default("Category Added Successfully", true, null));
+                    .body(new Default("Category Added Successfully", true, null, null));
         } catch (Exception e) {
 
-            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null));
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
     }
 
@@ -84,7 +103,7 @@ public class CategoryController {
 
             if (existingCategory == null) {
                 return ResponseEntity.badRequest()
-                        .body(new Default("Category does not exist", false, null));
+                        .body(new Default("Category does not exist", false, null, null));
             }
 
             Slugify slugify = new Slugify();
@@ -103,11 +122,11 @@ public class CategoryController {
             categoryRepo.save(existingCategory);
 
             return ResponseEntity.ok()
-                    .body(new Default("Category updated successfully", true, null));
+                    .body(new Default("Category updated successfully", true, null, null));
 
         } catch (Exception e) {
             return ResponseEntity.internalServerError()
-                    .body(new Default(e.getMessage(), false, null));
+                    .body(new Default(e.getMessage(), false, null, null));
         }
     }
 
@@ -117,12 +136,12 @@ public class CategoryController {
         try{
             Category category = categoryRepo.findById(id).orElse(null);
             if(category == null){
-                return ResponseEntity.badRequest().body(new Default("Category do not exist", false, null));
+                return ResponseEntity.badRequest().body(new Default("Category do not exist", false, null, null));
             }
             categoryRepo.delete(category);
-            return ResponseEntity.ok().body(new Default("Category Deleted Successfully", true, null));
+            return ResponseEntity.ok().body(new Default("Category Deleted Successfully", true, null, null));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null));
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
     }
 }

@@ -77,15 +77,15 @@ public class CourseController {
             var isUserExist = userRepo.findById(user.getUsername()).orElse(null);
 
             if(isUserExist == null){
-                return ResponseEntity.badRequest().body(new Default("User don't exist", false, null));
+                return ResponseEntity.badRequest().body(new Default("User don't exist", false, null,null));
             }
 
             if(isSlugExist != null){
-                return ResponseEntity.badRequest().body(new Default("Slug Already Exist. Please try with another one", false, null));
+                return ResponseEntity.badRequest().body(new Default("Slug Already Exist. Please try with another one", false, null, null));
             }
 
             if(isCategoryExist == null){
-                return ResponseEntity.badRequest().body(new Default("Category Don't Exist", false, null));
+                return ResponseEntity.badRequest().body(new Default("Category Don't Exist", false, null,null));
             }
 
             Courses course = new Courses();
@@ -96,9 +96,9 @@ public class CourseController {
             course.setUser(isUserExist);
             coursesRepo.save(course);
 
-            return ResponseEntity.ok().body(new Default("Course Added Successfully", true, null));
+            return ResponseEntity.ok().body(new Default("Course Added Successfully", true, null, null));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null));
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
     }
 
@@ -112,11 +112,11 @@ public class CourseController {
             var isCategoryExist = categoryRepo.findById(course.getCategoryId()).orElse(null);
 
             if(isCourseExist == null){
-                return ResponseEntity.badRequest().body(new Default("Invalid Course Id", false, null));
+                return ResponseEntity.badRequest().body(new Default("Invalid Course Id", false, null, null));
             }
 
             if(isCategoryExist == null){
-                return ResponseEntity.badRequest().body(new Default("Category Don't Exist", false, null));
+                return ResponseEntity.badRequest().body(new Default("Category Don't Exist", false, null, null));
             }
 
             isCourseExist.setTitle(course.getTitle());
@@ -125,10 +125,10 @@ public class CourseController {
             isCourseExist.setCategory(isCategoryExist);
             coursesRepo.save(isCourseExist);
 
-            return ResponseEntity.ok().body(new Default("Course Updated Successfully", true, null));
+            return ResponseEntity.ok().body(new Default("Course Updated Successfully", true, null, null));
         }
         catch (Exception e) {
-            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null));
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
     }
 
@@ -137,14 +137,14 @@ public class CourseController {
         try{
             var isCourseExist = coursesRepo.findById(id).orElse(null);
             if(isCourseExist == null){
-                return  ResponseEntity.badRequest().body(new Default("Course Not Found", false, null));
+                return  ResponseEntity.badRequest().body(new Default("Course Not Found", false, null, null));
             }
 
             coursesRepo.deleteById(id);
-            return ResponseEntity.ok().body(new Default("Course Deleted Successfully", true, null));
+            return ResponseEntity.ok().body(new Default("Course Deleted Successfully", true, null, null));
         }
         catch (Exception e) {
-            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null));
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null,null));
         }
     }
 }

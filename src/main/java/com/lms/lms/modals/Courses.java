@@ -27,6 +27,9 @@ public class Courses {
     @Column(nullable = false)
     private String description;
 
+    @Column(nullable = true)
+    private Boolean isFeatured = false;
+
     @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "category_id",  nullable = false)
     private Category category;

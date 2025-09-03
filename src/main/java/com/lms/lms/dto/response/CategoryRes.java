@@ -12,4 +12,5 @@ public class CategoryRes {
     private String icon;
     private String description;
     private long courseCount;
+    private Boolean isFeatured;
 }

@@ -24,6 +24,7 @@ public class Category {
     private String name;
     @Column(nullable = false)
     private String description;
+    private Boolean isFeatured = false;
 
     @Column(nullable = true)
     private String icon = "Code";

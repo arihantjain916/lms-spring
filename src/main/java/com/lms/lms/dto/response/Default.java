@@ -17,4 +17,7 @@ public class Default {
     @Nullable
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String date;
+    @Nullable
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Object data = null;
 }

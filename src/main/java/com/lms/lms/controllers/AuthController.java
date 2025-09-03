@@ -42,7 +42,7 @@ public class AuthController {
             User email = userRepo.findByEmail(register.getEmail()).orElse(null);
 
             if(username != null || email != null){
-                return new ResponseEntity<>(new Default("User Already Exists", false, null), HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(new Default("User Already Exists", false, null, null), HttpStatus.BAD_REQUEST);
             }
             User user = new User();
 
@@ -51,10 +51,10 @@ public class AuthController {
             user.setEmail(register.getEmail());
             user.setPassword(pass);
             userRepo.save(user);
-            return ResponseEntity.ok(new Default("User Created Successfully", true, null));
+            return ResponseEntity.ok(new Default("User Created Successfully", true, null, null));
         }
         catch (Exception e){
-            return new ResponseEntity<>(new Default(e.getMessage(), false, null), HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -64,7 +64,7 @@ public class AuthController {
             User isUserExist = userRepo.findByUsername(login.getUsername()).orElse(null);
 
             if(isUserExist == null){
-                return new ResponseEntity<>(new Default("User Does Not Exists", false, null), HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(new Default("User Does Not Exists", false, null, null), HttpStatus.BAD_REQUEST);
             }
 
             Authentication auth = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(login.getUsername(), login.getPassword()));
@@ -73,10 +73,10 @@ public class AuthController {
                 var token = jwtService.generateToken(isUserExist.getId());
                 return ResponseEntity.ok(new LoginRes("User Login Successfully", true, token));
             }
-            return new ResponseEntity<>(new Default("Invalid Credentials", false, null), HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>(new Default("Invalid Credentials", false, null, null), HttpStatus.UNAUTHORIZED);
         }
         catch (Exception e){
-            return new ResponseEntity<>(new Default(e.getMessage(), false, null), HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

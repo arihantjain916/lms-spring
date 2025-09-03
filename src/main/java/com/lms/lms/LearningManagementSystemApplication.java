@@ -23,7 +23,7 @@ public class LearningManagementSystemApplication {
     public ResponseEntity<Default> health(){
         ZonedDateTime istTime = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
         var date = istTime.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss"));
-        return ResponseEntity.ok(new Default("Application is running", true, date));
+        return ResponseEntity.ok(new Default("Application is running", true, date, null));
     }
 
     @GetMapping("/test")
