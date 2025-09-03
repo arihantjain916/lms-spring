@@ -80,6 +80,7 @@ public class CategoryController {
 
             category.setName(categoryReq.getName());
             category.setDescription(categoryReq.getDescription());
+            category.setIsFeatured(categoryReq.getIsFeatured());
             category.setSlug(slug);
 
             if(Boolean.parseBoolean(categoryReq.getId())){
@@ -117,6 +118,7 @@ public class CategoryController {
 
             existingCategory.setName(categoryReq.getName());
             existingCategory.setDescription(categoryReq.getDescription());
+            existingCategory.setIsFeatured(categoryReq.getIsFeatured());
             existingCategory.setSlug(slug);
 
             categoryRepo.save(existingCategory);

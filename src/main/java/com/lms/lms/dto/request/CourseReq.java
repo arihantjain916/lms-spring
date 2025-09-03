@@ -20,6 +20,8 @@ public class CourseReq {
     @NotBlank(message = "Course Category is required")
     private String categoryId;
 
+    private Boolean isFeatured;
+
     private Long id;
 
 }

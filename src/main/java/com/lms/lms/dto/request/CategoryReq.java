@@ -16,5 +16,7 @@ public class CategoryReq {
     @NotEmpty(message = "Category Description should not be null")
     private String description;
 
+    private Boolean isFeatured;
+
     private String id;
 }
