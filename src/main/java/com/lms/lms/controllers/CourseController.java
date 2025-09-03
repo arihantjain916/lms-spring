@@ -2,6 +2,7 @@ package com.lms.lms.controllers;
 
 import com.lms.lms.dto.request.CourseReq;
 import com.lms.lms.dto.response.CourseRes;
+
 import com.lms.lms.dto.response.Default;
 import com.lms.lms.mappers.CourseMapper;
 import com.lms.lms.modals.Courses;
@@ -15,6 +16,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/course")
@@ -41,25 +44,46 @@ public class CourseController {
     }
 
     @GetMapping("/{id}")
-    public Courses getCourseById(@PathVariable Long id)
-    {
-        return coursesRepo.findById(id).orElse(null);
+    public ResponseEntity<Default> getCourseById(@PathVariable Long id) {
+       try{
+           Courses course = coursesRepo.findById(id).orElse(null);
+           if (course == null) {
+               return ResponseEntity.badRequest().body(new Default("Course Not Found", false, null, null));
+           }
+           return ResponseEntity.ok().body(new Default("Course Found", true, null, courseMapper.toDto(course)));
+       } catch (Exception e) {
+           return ResponseEntity.internalServerError().body(new Default("Internal Server Error", false, null, null));
+       }
     }
 
     @GetMapping("/category/{category_id}")
-    public Iterable<CourseRes> getCoursebyCateoryId(@PathVariable String category_id){
-       return coursesRepo.findByCategoryId(category_id)
+    public ResponseEntity<Default> getCoursebyCateoryId(@PathVariable String category_id){
+       List<CourseRes> courses = coursesRepo.findByCategoryId(category_id)
                .stream()
-               .map(course -> courseMapper.toDto(course))
+               .map(courseMapper::toDto)
                .toList();
+
+
+       if(courses.isEmpty()){
+           return ResponseEntity.badRequest().body(new Default("Course Not Found", false, null, null));
+       }
+
+       return ResponseEntity.ok().body(new Default("Course Found", true, null, courses));
+
     }
 
     @GetMapping("/slug/{slug}")
-    public Iterable<CourseRes> getCoursebySlug(@PathVariable String slug){
-        return coursesRepo.findAllBySlug(slug)
+    public ResponseEntity<Default> getCoursebySlug(@PathVariable String slug){
+        List<CourseRes> courses= coursesRepo.findAllBySlug(slug)
                 .stream()
                 .map(course -> courseMapper.toDto(course))
                 .toList();
+
+        if(courses.isEmpty()){
+            return ResponseEntity.badRequest().body(new Default("Course Not Found", false, null, null));
+        }
+
+        return ResponseEntity.ok().body(new Default("Course Found", true, null, courses));
     }
 
     @PostMapping("/add")
