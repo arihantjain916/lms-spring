@@ -9,4 +9,10 @@ import java.util.List;
 public interface RatingRepo extends JpaRepository<Ratings, String> {
     @Query("SELECT r FROM Ratings r WHERE r.course.id = :courseId")
     List<Ratings> findByCourseId(Long courseId);
+
+    @Query("SELECT AVG(r.rating) FROM Ratings r WHERE r.course.id = :courseId")
+    Double avgRatingOfCourse(Long courseId);
+
+    @Query("SELECT COUNT(r) FROM Ratings r WHERE r.course.id = :courseId")
+    Integer totalRatingofCourse(Long courseId);
 }
