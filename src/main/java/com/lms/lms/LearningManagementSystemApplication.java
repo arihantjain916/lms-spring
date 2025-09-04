@@ -26,8 +26,4 @@ public class LearningManagementSystemApplication {
         return ResponseEntity.ok(new Default("Application is running", true, date, null));
     }
 
-    @GetMapping("/test")
-    public String test(){
-        return "JWT VALID";
-    }
 }

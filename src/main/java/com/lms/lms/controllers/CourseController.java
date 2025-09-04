@@ -8,6 +8,7 @@ import com.lms.lms.mappers.CourseMapper;
 import com.lms.lms.modals.Courses;
 import com.lms.lms.repo.CategoryRepo;
 import com.lms.lms.repo.CoursesRepo;
+import com.lms.lms.repo.PricingRepo;
 import com.lms.lms.repo.UserRepo;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +33,9 @@ public class CourseController {
     private UserRepo userRepo;
 
     @Autowired
+    private PricingRepo pricingRepo;
+
+    @Autowired
     private CourseMapper courseMapper;
 
     @GetMapping("/all")
@@ -39,7 +43,12 @@ public class CourseController {
     {
         return coursesRepo.findAll()
                 .stream()
-                .map(course -> courseMapper.toDto(course))
+                .map(course -> {
+                    CourseRes dto = courseMapper.toDto(course);
+                    Double price = pricingRepo.getMinPlanPriceByCourseId(course.getId());
+                    dto.setPrice(price);
+                    return dto;
+                })
                 .toList();
     }
 
@@ -60,7 +69,12 @@ public class CourseController {
     public ResponseEntity<Default> getCoursebyCateoryId(@PathVariable String category_id){
        List<CourseRes> courses = coursesRepo.findByCategoryId(category_id)
                .stream()
-               .map(courseMapper::toDto)
+               .map(course -> {
+                   CourseRes dto = courseMapper.toDto(course);
+                   Double price = pricingRepo.getMinPlanPriceByCourseId(course.getId());
+                   dto.setPrice(price);
+                   return dto;
+               })
                .toList();
 
 
@@ -76,7 +90,12 @@ public class CourseController {
     public ResponseEntity<Default> getCoursebySlug(@PathVariable String slug){
         List<CourseRes> courses= coursesRepo.findAllBySlug(slug)
                 .stream()
-                .map(course -> courseMapper.toDto(course))
+                .map(course -> {
+                    CourseRes dto = courseMapper.toDto(course);
+                    Double price = pricingRepo.getMinPlanPriceByCourseId(course.getId());
+                    dto.setPrice(price);
+                    return dto;
+                })
                 .toList();
 
         if(courses.isEmpty()){

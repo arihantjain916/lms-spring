@@ -27,6 +27,10 @@ public class Pricing_Plans {
     @Column(nullable = false)
     private PlanType planType = PlanType.LIFETIME;
 
+    @ManyToOne
+    @JoinColumn(name = "course_id")
+    private Courses courses;
+
     @Getter
     public enum PlanType {
         MONTHLY(1),
