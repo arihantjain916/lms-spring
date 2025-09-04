@@ -6,6 +6,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.util.Date;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -30,6 +34,14 @@ public class Pricing_Plans {
     @ManyToOne
     @JoinColumn(name = "course_id")
     private Courses courses;
+
+    @Column(nullable = false, updatable = false)
+    @CreationTimestamp
+    private Date createdAt = new Date();
+
+    @Column(nullable = false, updatable = false)
+    @UpdateTimestamp
+    private Date updatedAt = new Date();
 
     @Getter
     public enum PlanType {
