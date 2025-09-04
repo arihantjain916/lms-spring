@@ -1,11 +1,21 @@
 package com.lms.lms.modals;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.util.Date;
 
+//@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Entity
+@Getter
+@Setter
 public class Ratings {
 
     @Id
@@ -27,7 +37,7 @@ public class Ratings {
 
     @ManyToOne
     @JoinColumn(name = "course_id")
-    private Courses courses;
+    private Courses course;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
