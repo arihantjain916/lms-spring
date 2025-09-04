@@ -1,5 +1,6 @@
 package com.lms.lms.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,6 +17,11 @@ public class CourseRes {
     private Double price;
 
     private UserRes user;
+
+    @JsonFormat(shape = JsonFormat.Shape.NUMBER, pattern = "0.0")
+    private Double avgRating;
+
+    private Integer totalRating;
 
     private CustomCategoryRes category;
 }

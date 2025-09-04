@@ -2,14 +2,10 @@ package com.lms.lms.controllers;
 
 import com.lms.lms.dto.request.CourseReq;
 import com.lms.lms.dto.response.CourseRes;
-
 import com.lms.lms.dto.response.Default;
 import com.lms.lms.mappers.CourseMapper;
 import com.lms.lms.modals.Courses;
-import com.lms.lms.repo.CategoryRepo;
-import com.lms.lms.repo.CoursesRepo;
-import com.lms.lms.repo.PricingRepo;
-import com.lms.lms.repo.UserRepo;
+import com.lms.lms.repo.*;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +32,9 @@ public class CourseController {
     private PricingRepo pricingRepo;
 
     @Autowired
+    private RatingRepo ratingRepo;
+
+    @Autowired
     private CourseMapper courseMapper;
 
     @GetMapping("/all")
@@ -46,7 +45,11 @@ public class CourseController {
                 .map(course -> {
                     CourseRes dto = courseMapper.toDto(course);
                     Double price = pricingRepo.getMinPlanPriceByCourseId(course.getId());
+                    Double avgRating = ratingRepo.avgRatingOfCourse(course.getId());
+                    Integer totalRating = ratingRepo.totalRatingofCourse(course.getId());
                     dto.setPrice(price);
+                    dto.setAvgRating(avgRating);
+                    dto.setTotalRating(totalRating);
                     return dto;
                 })
                 .toList();
@@ -72,7 +75,11 @@ public class CourseController {
                .map(course -> {
                    CourseRes dto = courseMapper.toDto(course);
                    Double price = pricingRepo.getMinPlanPriceByCourseId(course.getId());
+                   Double avgRating = ratingRepo.avgRatingOfCourse(course.getId());
+                   Integer totalRating = ratingRepo.totalRatingofCourse(course.getId());
                    dto.setPrice(price);
+                   dto.setAvgRating(avgRating);
+                   dto.setTotalRating(totalRating);
                    return dto;
                })
                .toList();
@@ -93,7 +100,11 @@ public class CourseController {
                 .map(course -> {
                     CourseRes dto = courseMapper.toDto(course);
                     Double price = pricingRepo.getMinPlanPriceByCourseId(course.getId());
+                    Double avgRating = ratingRepo.avgRatingOfCourse(course.getId());
+                    Integer totalRating = ratingRepo.totalRatingofCourse(course.getId());
                     dto.setPrice(price);
+                    dto.setAvgRating(avgRating);
+                    dto.setTotalRating(totalRating);
                     return dto;
                 })
                 .toList();
