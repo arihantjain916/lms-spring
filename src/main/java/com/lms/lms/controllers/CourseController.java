@@ -5,6 +5,7 @@ import com.lms.lms.dto.response.CourseRes;
 import com.lms.lms.dto.response.Default;
 import com.lms.lms.mappers.CourseMapper;
 import com.lms.lms.modals.Courses;
+import com.lms.lms.modals.Review;
 import com.lms.lms.repo.*;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +36,9 @@ public class CourseController {
     private RatingRepo ratingRepo;
 
     @Autowired
+    private ReviewRepo reviewRepo;
+
+    @Autowired
     private CourseMapper courseMapper;
 
     @GetMapping("/all")
@@ -47,9 +51,13 @@ public class CourseController {
                     Double price = pricingRepo.getMinPlanPriceByCourseId(course.getId());
                     Double avgRating = ratingRepo.avgRatingOfCourse(course.getId());
                     Integer totalRating = ratingRepo.totalRatingofCourse(course.getId());
+                    Integer upcount = reviewRepo.countReviewByCourseIdAndVoteType(9L, Review.VoteType.UPVOTE);
+                    Integer downcount = reviewRepo.countReviewByCourseIdAndVoteType(9L, Review.VoteType.DOWNVOTE);
                     dto.setPrice(price);
                     dto.setAvgRating(avgRating);
                     dto.setTotalRating(totalRating);
+                    dto.setUpvote(upcount);
+                    dto.setDownvote(downcount);
                     return dto;
                 })
                 .toList();
@@ -77,9 +85,13 @@ public class CourseController {
                    Double price = pricingRepo.getMinPlanPriceByCourseId(course.getId());
                    Double avgRating = ratingRepo.avgRatingOfCourse(course.getId());
                    Integer totalRating = ratingRepo.totalRatingofCourse(course.getId());
+                   Integer upcount = reviewRepo.countReviewByCourseIdAndVoteType(9L, Review.VoteType.UPVOTE);
+                   Integer downcount = reviewRepo.countReviewByCourseIdAndVoteType(9L, Review.VoteType.DOWNVOTE);
                    dto.setPrice(price);
                    dto.setAvgRating(avgRating);
                    dto.setTotalRating(totalRating);
+                   dto.setUpvote(upcount);
+                   dto.setDownvote(downcount);
                    return dto;
                })
                .toList();
@@ -102,9 +114,13 @@ public class CourseController {
                     Double price = pricingRepo.getMinPlanPriceByCourseId(course.getId());
                     Double avgRating = ratingRepo.avgRatingOfCourse(course.getId());
                     Integer totalRating = ratingRepo.totalRatingofCourse(course.getId());
+                    Integer upcount = reviewRepo.countReviewByCourseIdAndVoteType(9L, Review.VoteType.UPVOTE);
+                    Integer downcount = reviewRepo.countReviewByCourseIdAndVoteType(9L, Review.VoteType.DOWNVOTE);
                     dto.setPrice(price);
                     dto.setAvgRating(avgRating);
                     dto.setTotalRating(totalRating);
+                    dto.setUpvote(upcount);
+                    dto.setDownvote(downcount);
                     return dto;
                 })
                 .toList();

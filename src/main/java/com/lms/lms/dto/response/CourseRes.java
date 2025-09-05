@@ -24,5 +24,8 @@ public class CourseRes {
     private Integer totalRating;
 
     private CustomCategoryRes category;
+
+    private Integer upvote;
+    private Integer downvote;
 }
 
