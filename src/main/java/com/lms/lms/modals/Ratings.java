@@ -1,6 +1,8 @@
 package com.lms.lms.modals;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -8,6 +10,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 //@Data
@@ -22,8 +25,10 @@ public class Ratings {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(nullable = false)
-    private Integer rating;
+    @Column(nullable = false,precision = 2, scale = 1)
+    @DecimalMin("0.0")
+    @DecimalMax("5.0")
+    private BigDecimal rating;
 
     private String comment;
 
