@@ -21,9 +21,9 @@ public interface BlogRepo extends JpaRepository<Blog, String> {
             """)
     List<Blog> findByUserandStatus(User user, Blog.Staus status);
 
-    @Query("SELECT b FROM Blog b WHERE b.slug = :slug OR b.title = :title")
+    @Query("SELECT b FROM Blog b WHERE b.slug = :slug")
     Optional<Blog> findBySlug(String slug);
 
     @Query("SELECT b FROM Blog b WHERE b.title = :title")
-    Optional<Blog> findByTitle(String slug);
+    Optional<Blog> findByTitle(String title);
 }
