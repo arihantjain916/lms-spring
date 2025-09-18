@@ -90,8 +90,12 @@ public class BlogController {
             blog.setTitle(blogReq.getTitle());
             blog.setSlug(blogReq.getSlug());
             blog.setDescription(blogReq.getDescription());
-            blog.setUser(isUserExist);
             blog.setContent(blogReq.getContent());
+            blog.setRead_time(blogReq.getRead_time());
+            blog.setStatus(blogReq.getStatus());
+            blog.setTag(blogReq.getTag());
+            blog.setUser(isUserExist);
+            blog.setImageUrl(blogReq.getImage_url());
             blogRepo.save(blog);
 
             return ResponseEntity.ok().body(new Default("Blog Added Successfully", true, null, null));

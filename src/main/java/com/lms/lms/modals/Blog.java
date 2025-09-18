@@ -23,20 +23,22 @@ public class Blog {
     private String id;
 
     @Column(nullable = false, unique = true)
-    private String title, slug, description, content, read_time;
+    private String title, slug, description, content;
 
+    @Column(nullable = false)
+    private String read_time;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private Tag tag = Tag.TECHNOLOGY;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String imageUrl;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private Staus status = Staus.DRAFT;
 
     @CreationTimestamp

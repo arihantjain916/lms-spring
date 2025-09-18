@@ -49,6 +49,8 @@ public class Courses {
     private Date createdAt = new Date();
 
     @Column(nullable = false, updatable = false)
+
+    //to do add asset ids
     @UpdateTimestamp
     private Date updatedAt = new Date();
 }

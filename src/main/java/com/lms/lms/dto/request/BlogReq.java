@@ -3,6 +3,7 @@ package com.lms.lms.dto.request;
 
 import com.lms.lms.modals.Blog;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -25,12 +26,12 @@ public class BlogReq {
     @NotBlank(message = "Read Time is required")
     private String read_time;
 
-    @NotBlank(message = "Tag is required")
+    @NotNull(message = "Tag is required")
     private Blog.Tag tag;
 
-    @NotBlank(message = "Status is required")
+    @NotNull(message = "Status is required")
     private Blog.Staus status;
 
     @NotBlank(message = "ImageUrl is required")
-    private String imageUrl;
+    private String image_url;
 }
