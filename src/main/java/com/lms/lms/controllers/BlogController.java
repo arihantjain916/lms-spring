@@ -86,6 +86,18 @@ public class BlogController {
                 return ResponseEntity.badRequest().body(new Default("User don't exist", false, null, null));
             }
 
+            var isSlugExist = blogRepo.findBySlug(blogReq.getSlug()).orElse(null);
+            if (isSlugExist != null) {
+                return ResponseEntity.badRequest().body(new Default("Blog already exist with same slug", false, null, null));
+            }
+
+            var isTitleExist = blogRepo.findByTitle(blogReq.getTitle()).orElse(null);
+            if (isTitleExist != null) {
+                return ResponseEntity.badRequest().body(new Default("Blog already exist with same Title", false, null, null));
+            }
+
+
+
             Blog blog = new Blog();
             blog.setTitle(blogReq.getTitle());
             blog.setSlug(blogReq.getSlug());

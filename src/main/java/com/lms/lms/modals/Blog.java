@@ -23,10 +23,10 @@ public class Blog {
     private String id;
 
     @Column(nullable = false, unique = true)
-    private String title, slug, description, content;
+    private String title, slug;
 
     @Column(nullable = false)
-    private String read_time;
+    private String read_time, description, content;
 
     @Column(nullable = false)
     private Tag tag = Tag.TECHNOLOGY;

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface BlogRepo extends JpaRepository<Blog, String> {
 
@@ -19,4 +20,10 @@ public interface BlogRepo extends JpaRepository<Blog, String> {
                   AND (:status IS NULL OR b.status = :status)
             """)
     List<Blog> findByUserandStatus(User user, Blog.Staus status);
+
+    @Query("SELECT b FROM Blog b WHERE b.slug = :slug OR b.title = :title")
+    Optional<Blog> findBySlug(String slug);
+
+    @Query("SELECT b FROM Blog b WHERE b.title = :title")
+    Optional<Blog> findByTitle(String slug);
 }
