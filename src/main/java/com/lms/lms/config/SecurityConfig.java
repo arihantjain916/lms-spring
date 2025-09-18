@@ -48,6 +48,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/course/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/category/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/ratings/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/blog").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
