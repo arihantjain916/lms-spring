@@ -6,9 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Date;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -43,6 +43,9 @@ public class User {
     @Column(nullable = false, updatable = false)
     @UpdateTimestamp
     private Date updatedAt = new Date();
+
+    @OneToMany(mappedBy = "user")
+    private List<Asset> assets;
 
     public enum Role {
         STUDENT,
