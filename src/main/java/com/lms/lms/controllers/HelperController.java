@@ -109,7 +109,7 @@ public class HelperController {
 //                    .path("/Uploads/")
 //                    .path(file.getOriginalFilename())
 //                    .toUriString();
-            return ResponseEntity.ok().body(new Default("File Uploaded Successfully", true, null, null));
+            return ResponseEntity.ok().body(new Default("File Uploaded Successfully", true, null, res.get("secure_url").toString()));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
