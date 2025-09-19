@@ -182,12 +182,18 @@ public class CourseController {
 
             var isCategoryExist = categoryRepo.findById(course.getCategoryId()).orElse(null);
 
+            var isSlugExist = coursesRepo.findBySlug(course.getSlug()).orElse(null);
+
             if(isCourseExist == null){
                 return ResponseEntity.badRequest().body(new Default("Invalid Course Id", false, null, null));
             }
 
             if(isCategoryExist == null){
                 return ResponseEntity.badRequest().body(new Default("Category Don't Exist", false, null, null));
+            }
+
+            if (isSlugExist != null && !isSlugExist.getId().equals(course.getId())) {
+                return ResponseEntity.badRequest().body(new Default("Course Already Exist With Same Slug", false, null, null));
             }
 
             isCourseExist.setTitle(course.getTitle());
