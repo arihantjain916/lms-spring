@@ -11,4 +11,6 @@ public interface CoursesRepo extends JpaRepository<Courses , Long> {
     Optional<Courses> findBySlug(String slug);
     List<Courses> findByCategoryId(String categoryId);
     List<Courses> findAllBySlug(String slug);
+
+    List<Courses> findAllByUserId(String userId);
 }

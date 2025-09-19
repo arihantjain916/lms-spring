@@ -180,4 +180,16 @@ public class BlogController {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<Default> getUserBlog() {
+        try {
+            var user = userDetails();
+            List<BlogRes> blogRes = blogRepo.findAllByUserId(user.getId()).stream().map(blogMapper::toDto).toList();
+
+            return ResponseEntity.ok().body(new Default("Blog Fetched Successfully", true, null, blogRes));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
 }

@@ -225,4 +225,38 @@ public class CourseController {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null,null));
         }
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<Default> getUserCourse() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            UserDetails user = (UserDetails) authentication.getPrincipal();
+
+            var userInfo = userRepo.findById(user.getUsername()).orElse(null);
+            if (userInfo == null) {
+                return ResponseEntity.badRequest().body(new Default("User Don't Exist", false, null, null));
+            }
+            List<CourseRes> courseRes = coursesRepo.findAllByUserId(userInfo.getId())
+                    .stream()
+                    .map(course -> {
+                        CourseRes dto = courseMapper.toDto(course);
+                        Double price = pricingRepo.getMinPlanPriceByCourseId(course.getId());
+                        Double avgRating = ratingRepo.avgRatingOfCourse(course.getId());
+                        Integer totalRating = ratingRepo.totalRatingofCourse(course.getId());
+                        Integer upcount = reviewRepo.countReviewByCourseIdAndVoteType(9L, Review.VoteType.UPVOTE);
+                        Integer downcount = reviewRepo.countReviewByCourseIdAndVoteType(9L, Review.VoteType.DOWNVOTE);
+                        dto.setPrice(price);
+                        dto.setAvgRating(avgRating);
+                        dto.setTotalRating(totalRating);
+                        dto.setUpvote(upcount);
+                        dto.setDownvote(downcount);
+                        return dto;
+                    })
+                    .toList();
+
+            return ResponseEntity.ok().body(new Default("Blog Fetched Successfully", true, null, courseRes));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
 }
