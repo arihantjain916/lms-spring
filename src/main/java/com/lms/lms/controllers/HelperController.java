@@ -2,6 +2,7 @@ package com.lms.lms.controllers;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import com.github.slugify.Slugify;
 import com.lms.lms.dto.response.Default;
 import com.lms.lms.modals.Asset;
 import com.lms.lms.modals.AssetMeta;
@@ -14,9 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -110,6 +109,18 @@ public class HelperController {
 //                    .path(file.getOriginalFilename())
 //                    .toUriString();
             return ResponseEntity.ok().body(new Default("File Uploaded Successfully", true, null, res.get("secure_url").toString()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    @GetMapping("/slug/{title}")
+    public ResponseEntity<Default> generateSlug(@PathVariable String title) {
+        try {
+            Slugify slugify = new Slugify();
+            String slug = slugify.slugify(title);
+
+            return ResponseEntity.ok().body(new Default("Slug Generated Successfully", true, null, slug));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
