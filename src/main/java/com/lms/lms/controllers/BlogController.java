@@ -96,8 +96,6 @@ public class BlogController {
                 return ResponseEntity.badRequest().body(new Default("Blog already exist with same Title", false, null, null));
             }
 
-
-
             Blog blog = new Blog();
             blog.setTitle(blogReq.getTitle());
             blog.setSlug(blogReq.getSlug());
@@ -111,6 +109,27 @@ public class BlogController {
             blogRepo.save(blog);
 
             return ResponseEntity.ok().body(new Default("Blog Added Successfully", true, null, null));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<Default> deleteBlogById(@PathVariable String id) {
+        try {
+
+            var user = userDetails();
+            var isBlogExist = blogRepo.findById(id).orElse(null);
+            if (isBlogExist == null) {
+                return ResponseEntity.badRequest().body(new Default("Blog Not Found", false, null, null));
+            }
+
+            boolean isBlogOwner = user.getId().equals(isBlogExist.getUser().getId());
+            if (!isBlogOwner) {
+                return ResponseEntity.badRequest().body(new Default("You are not authorized to delete this blog", false, null, null));
+            }
+            blogRepo.deleteById(id);
+            return ResponseEntity.ok().body(new Default("Blog Deleted Successfully", true, null, null));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
