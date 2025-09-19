@@ -16,5 +16,6 @@ public class BlogRes {
     private String updatedAt;
     private String read_time;
     private String tag;
+    private String imageUrl;
     private UserRes user;
 }

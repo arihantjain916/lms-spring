@@ -114,10 +114,56 @@ public class BlogController {
         }
     }
 
+    @PutMapping("/update")
+    public ResponseEntity<Default> updateBlogById(@Valid @RequestBody BlogReq blogReq) {
+        try {
+            if (blogReq.getId() == null || blogReq.getId().isEmpty()) {
+                return ResponseEntity.badRequest().body(new Default("Blog Id is required", false, null, null));
+            }
+
+            var isBlogExist = blogRepo.findById(blogReq.getId()).orElse(null);
+
+            if (isBlogExist == null) {
+                return ResponseEntity.badRequest().body(new Default("Blog Not Found", false, null, null));
+            }
+
+            var user = userDetails();
+
+            boolean isBlogOwner = user.getId().equals(isBlogExist.getUser().getId());
+            if (!isBlogOwner) {
+                return ResponseEntity.badRequest().body(new Default("You are not authorized to update this blog", false, null, null));
+            }
+
+            var isSlugExist = blogRepo.findBySlug(blogReq.getSlug()).orElse(null);
+            if (isSlugExist != null && !isSlugExist.getId().equals(blogReq.getId())) {
+                return ResponseEntity.badRequest().body(new Default("Blog already exist with same slug", false, null, null));
+            }
+
+            var isTitleExist = blogRepo.findByTitle(blogReq.getTitle()).orElse(null);
+            if (isTitleExist != null && !isTitleExist.getId().equals(blogReq.getId())) {
+                return ResponseEntity.badRequest().body(new Default("Blog already exist with same Title", false, null, null));
+            }
+
+            isBlogExist.setSlug(blogReq.getSlug());
+            isBlogExist.setTitle(blogReq.getTitle());
+            isBlogExist.setDescription(blogReq.getDescription());
+            isBlogExist.setContent(blogReq.getContent());
+            isBlogExist.setRead_time(blogReq.getRead_time());
+            isBlogExist.setStatus(blogReq.getStatus());
+            isBlogExist.setTag(blogReq.getTag());
+            isBlogExist.setImageUrl(blogReq.getImage_url());
+            isBlogExist.setUser(isBlogExist.getUser());
+            blogRepo.save(isBlogExist);
+            return ResponseEntity.ok().body(new Default("Blog Updated Successfully", true, null, null));
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<Default> deleteBlogById(@PathVariable String id) {
         try {
-
             var user = userDetails();
             var isBlogExist = blogRepo.findById(id).orElse(null);
             if (isBlogExist == null) {

@@ -11,6 +11,8 @@ import lombok.Getter;
 @Getter
 public class BlogReq {
 
+    private String id;
+
     @NotBlank(message = "Title is required")
     private String title;
 
