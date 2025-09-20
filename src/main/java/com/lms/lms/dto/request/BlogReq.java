@@ -28,12 +28,16 @@ public class BlogReq {
     @NotBlank(message = "Read Time is required")
     private String read_time;
 
+    @NotNull(message = "Category is required")
+    private Blog.Category category;
+
     @NotNull(message = "Tag is required")
-    private Blog.Tag tag;
+    private String tag;
 
     @NotNull(message = "Status is required")
     private Blog.Staus status;
 
     @NotBlank(message = "ImageUrl is required")
     private String image_url;
+
 }

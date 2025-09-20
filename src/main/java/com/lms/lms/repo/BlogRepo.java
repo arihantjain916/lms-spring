@@ -17,9 +17,9 @@ public interface BlogRepo extends JpaRepository<Blog, String> {
     @Query("""
                 SELECT b FROM Blog b 
                 WHERE (:user IS NULL OR b.user = :user) 
-                  AND (:status IS NULL OR b.status = :status)
+                  AND (:category IS NULL OR b.category = :category)
             """)
-    List<Blog> findByUserandStatus(User user, Blog.Staus status);
+    List<Blog> findByUserandTag(User user, Blog.Category category);
 
     @Query("SELECT b FROM Blog b WHERE b.slug = :slug")
     Optional<Blog> findBySlug(String slug);

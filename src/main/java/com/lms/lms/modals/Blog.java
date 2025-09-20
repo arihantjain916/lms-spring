@@ -29,17 +29,23 @@ public class Blog {
     private String read_time, description, content;
 
     @Column(nullable = false)
-    private Tag tag = Tag.TECHNOLOGY;
+    private String Tag;
+
+    @Column(nullable = false)
+    private Category category = Category.TECHNOLOGY;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
+
 
     @Column(nullable = false)
     private String imageUrl;
 
     @Column(nullable = false)
     private Staus status = Staus.DRAFT;
+
+    private Boolean isFeatured = Boolean.FALSE;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
@@ -54,12 +60,15 @@ public class Blog {
         UNPUBLISHED
     }
 
-    public enum Tag {
+    public enum Category {
         CAREER,
         LEARNING,
         TECHNOLOGY,
         INDUSTRY,
         EDUCATION
     }
+
+    //Add Category
+    //Add isFeatured
 
 }

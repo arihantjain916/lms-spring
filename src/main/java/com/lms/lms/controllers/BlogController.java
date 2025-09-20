@@ -43,15 +43,15 @@ public class BlogController {
     @GetMapping
     public ResponseEntity<?> getAllBlogs(
             @RequestParam(required = false) String userId,
-            @RequestParam(required = false) String status
+            @RequestParam(required = false) String category
     ) {
         try {
-            Blog.Staus statusValue = null;
+            Blog.Category categoryValue = null;
             User user = null;
 
-            if (status != null && !status.isEmpty()) {
+            if (category != null && !category.isEmpty()) {
                 try {
-                    statusValue = Blog.Staus.valueOf(status);
+                    categoryValue = Blog.Category.valueOf(category);
                 } catch (Exception e) {
                     return ResponseEntity.badRequest().body(new Default("Invalid Status", false, null, null));
                 }
@@ -64,8 +64,7 @@ public class BlogController {
                 user = isUserExist;
             }
 
-
-            List<Blog> blogs = blogRepo.findByUserandStatus(user, statusValue);
+            List<Blog> blogs = blogRepo.findByUserandTag(user, categoryValue);
 
             List<BlogRes> blogRes = blogs.
                     stream()
@@ -105,6 +104,7 @@ public class BlogController {
             blog.setStatus(blogReq.getStatus());
             blog.setTag(blogReq.getTag());
             blog.setUser(isUserExist);
+            blog.setCategory(blogReq.getCategory());
             blog.setImageUrl(blogReq.getImage_url());
             blogRepo.save(blog);
 
