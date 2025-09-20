@@ -4,6 +4,7 @@ package com.lms.lms.controllers;
 import com.lms.lms.dto.request.BlogReq;
 import com.lms.lms.dto.response.BlogRes;
 import com.lms.lms.dto.response.Default;
+import com.lms.lms.dto.response.PaginatedResponse;
 import com.lms.lms.mappers.BlogMapper;
 import com.lms.lms.modals.Blog;
 import com.lms.lms.modals.User;
@@ -11,6 +12,10 @@ import com.lms.lms.repo.BlogRepo;
 import com.lms.lms.repo.UserRepo;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -43,7 +48,11 @@ public class BlogController {
     @GetMapping
     public ResponseEntity<?> getAllBlogs(
             @RequestParam(required = false) String userId,
-            @RequestParam(required = false) String category
+            @RequestParam(required = false) String category,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "true") boolean ascending
     ) {
         try {
             Blog.Category categoryValue = null;
@@ -64,13 +73,31 @@ public class BlogController {
                 user = isUserExist;
             }
 
-            List<Blog> blogs = blogRepo.findByUserandTag(user, categoryValue);
+            int pageNumber = page > 0 ? page - 1 : 0;
+            Sort sort = ascending ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+            Pageable pageable = PageRequest.of(pageNumber, size, sort);
+            Page<Blog> blogs = blogRepo.findByUserAndCategory(user, categoryValue, pageable);
 
             List<BlogRes> blogRes = blogs.
                     stream()
                     .map(blogMapper::toDto)
                     .toList();
-            return ResponseEntity.ok().body(new Default("Blog Fetched Successfully", true, null, blogRes));
+//            Map<Object,Object> pagination = Map.of(
+//                    "totalPages", blogs.getTotalPages(),
+//                    "totalElements", blogs.getTotalElements(),
+//                    "currentPage", blogs.getNumber() + 1,
+//                    "size", blogs.getSize()
+//            );
+//
+//            blogRes.add(pagination);
+            PaginatedResponse<BlogRes> paginatedResponse = new PaginatedResponse<>(
+                    blogRes,
+                    blogs.getNumber() + 1,
+                    blogs.getSize(),
+                    blogs.getTotalElements(),
+                    blogs.getTotalPages()
+            );
+            return ResponseEntity.ok().body(new Default("Blog Fetched Successfully", true, null, paginatedResponse));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
