@@ -50,7 +50,7 @@ public class BlogController {
             @RequestParam(required = false) String userId,
             @RequestParam(required = false) String category,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(defaultValue = "6") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "true") boolean ascending
     ) {
@@ -219,4 +219,20 @@ public class BlogController {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
     }
+
+    @GetMapping("/{slug}")
+    public ResponseEntity<Default> getSpecificBlog(@PathVariable String slug) {
+        try {
+            var blog = blogRepo.findBySlug(slug).orElse(null);
+            if (blog == null) {
+                return ResponseEntity.badRequest().body(new Default("Blog Not Found", false, null, null));
+            }
+            BlogRes blogRes = blogMapper.toDto(blog);
+            return ResponseEntity.ok().body(new Default("Blog Details Fetched Successfully", true, null, blogRes));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+
+    }
+
 }
