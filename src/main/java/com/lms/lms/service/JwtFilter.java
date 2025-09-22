@@ -31,23 +31,6 @@ public class JwtFilter extends OncePerRequestFilter {
     @Autowired
     private PublicRoutes publicRoutes;
 
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest req) {
-        String p = req.getServletPath();
-
-        String method = req.getMethod();
-
-        // Skip only GET requests that match public routes
-        if ("GET".equalsIgnoreCase(method)) {
-            return publicRoutes.PUBLIC.stream()
-                    .anyMatch(pattern -> PM.match(pattern, p));
-        }
-
-
-        return publicRoutes.PUBLIC
-                .stream().anyMatch(pattern -> PM.match(pattern, p))
-                || "OPTIONS".equalsIgnoreCase(req.getMethod());
-    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
