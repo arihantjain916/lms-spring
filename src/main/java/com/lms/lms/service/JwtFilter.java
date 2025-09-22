@@ -1,5 +1,6 @@
 package com.lms.lms.service;
 
+import com.lms.lms.GlobalValue.PublicRoutes;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,8 +11,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -19,31 +20,60 @@ import java.io.IOException;
 @Service
 public class JwtFilter extends OncePerRequestFilter {
 
+
     @Autowired
     private JwtService jwtService;
+
     @Autowired
     ApplicationContext context;
 
+    private static final AntPathMatcher PM = new AntPathMatcher();
+    @Autowired
+    private PublicRoutes publicRoutes;
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest req) {
+        String p = req.getServletPath();
+
+        String method = req.getMethod();
+
+        // Skip only GET requests that match public routes
+        if ("GET".equalsIgnoreCase(method)) {
+            return publicRoutes.PUBLIC.stream()
+                    .anyMatch(pattern -> PM.match(pattern, p));
+        }
+
+
+        return publicRoutes.PUBLIC
+                .stream().anyMatch(pattern -> PM.match(pattern, p))
+                || "OPTIONS".equalsIgnoreCase(req.getMethod());
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        String authHeader = request.getHeader("Authorization");
-        String token = null;
-        String id =null;
+        try {
+            String authHeader = request.getHeader("Authorization");
+            String token = null;
+            String id = null;
 
-        if(authHeader != null && authHeader.startsWith("Bearer ")){
-            token = authHeader.substring(7);
-            id = jwtService.extractUsername(token);
-        }
-
-        if(id != null && SecurityContextHolder.getContext().getAuthentication() == null){
-            UserDetails userDetails = context.getBean(UserDetailsService.class).loadUserById(id);
-            if(jwtService.validateToken(token, userDetails)){
-                UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                usernamePasswordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                token = authHeader.substring(7);
+                id = jwtService.extractUsername(token);
             }
-        }
 
-        filterChain.doFilter(request,response);
+            if (id != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = context.getBean(UserDetailsService.class).loadUserById(id);
+                if (jwtService.validateToken(token, userDetails)) {
+                    UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    usernamePasswordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+                }
+            }
+
+            filterChain.doFilter(request, response);
+        } catch (Exception e) {
+            SecurityContextHolder.clearContext();
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.lms.lms.config;
 
 
+import com.lms.lms.GlobalValue.PublicRoutes;
 import com.lms.lms.service.JwtFilter;
 import com.lms.lms.service.UserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,10 @@ public class SecurityConfig {
 
     @Autowired
     private UserDetailsService userDetailsService;
+
+    @Autowired
+    private PublicRoutes publicRoutes;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -49,29 +54,27 @@ public class SecurityConfig {
                 .cors(cors->cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(req->req
                         .requestMatchers("/auth/**", "/health", "/test", "/contact/**", "/upload/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/course/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/category/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/ratings/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/blog").permitAll()
+//                        .requestMatchers(HttpMethod.GET, "/course/**").permitAll()
+//                        .requestMatchers(HttpMethod.GET, "/category/**").permitAll()
+//                        .requestMatchers(HttpMethod.GET, "/ratings/**").permitAll()
+//                        .requestMatchers(HttpMethod.GET, "/blog").permitAll()
+                        .requestMatchers(HttpMethod.GET, publicRoutes.getPublicRoutes()).permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex
                         .accessDeniedHandler((req, res, e) -> {
                             globalExceptionHandler.handleException(
-                                    res,
-                                    HttpStatus.FORBIDDEN,
-                                    "Access Denied",
+                                    res, HttpStatus.FORBIDDEN, "Access Denied",
                                     "You are not authorized to access this resource"
                             );
-                        }))
-                .exceptionHandling(ex -> ex.authenticationEntryPoint((req, res, e) -> {
-                    globalExceptionHandler.handleException(
-                            res,
-                            HttpStatus.UNAUTHORIZED,
-                            "Unauthorized",
-                            "You are not authorized to access this resource"
-                    );
-                }))
-                .sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                        })
+                        .authenticationEntryPoint((req, res, e) -> {
+                            globalExceptionHandler.handleException(
+                                    res, HttpStatus.UNAUTHORIZED, "Unauthorized",
+                                    "You are not authorized to access this resource"
+                            );
+                        })
+                )
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
