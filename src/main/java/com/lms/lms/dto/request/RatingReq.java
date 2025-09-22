@@ -1,9 +1,8 @@
 package com.lms.lms.dto.request;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.Getter;
 
 import java.math.BigDecimal;
 
@@ -11,9 +10,9 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class RatingReq {
     private String comment;
-    @NotBlank(message = "Rating is required")
+    @NotNull(message = "Rating is required")
     private BigDecimal rating;
 
-    @NotBlank(message = "Course ID is required")
+    @NotNull(message = "Course ID is required")
     private Long courseId;
 }
