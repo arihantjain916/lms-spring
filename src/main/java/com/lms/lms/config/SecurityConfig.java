@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -32,6 +33,9 @@ public class SecurityConfig {
     private JwtFilter jwtFilter;
 
     @Autowired
+    private GlobalExceptionHandler globalExceptionHandler;
+
+    @Autowired
     private UserDetailsService userDetailsService;
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -50,6 +54,23 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/ratings/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/blog").permitAll()
                         .anyRequest().authenticated())
+                .exceptionHandling(ex -> ex
+                        .accessDeniedHandler((req, res, e) -> {
+                            globalExceptionHandler.handleException(
+                                    res,
+                                    HttpStatus.FORBIDDEN,
+                                    "Access Denied",
+                                    "You are not authorized to access this resource"
+                            );
+                        }))
+                .exceptionHandling(ex -> ex.authenticationEntryPoint((req, res, e) -> {
+                    globalExceptionHandler.handleException(
+                            res,
+                            HttpStatus.UNAUTHORIZED,
+                            "Unauthorized",
+                            "You are not authorized to access this resource"
+                    );
+                }))
                 .sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
