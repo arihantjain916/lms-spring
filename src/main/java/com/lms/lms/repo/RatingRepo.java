@@ -15,4 +15,6 @@ public interface RatingRepo extends JpaRepository<Ratings, String> {
 
     @Query("SELECT COUNT(r) FROM Ratings r WHERE r.course.id = :courseId")
     Integer totalRatingofCourse(Long courseId);
+
+    Boolean existsByCourseIdAndUserId(Long courseId, String userId);
 }
