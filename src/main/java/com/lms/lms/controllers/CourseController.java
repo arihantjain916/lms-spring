@@ -21,6 +21,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/course")
@@ -47,18 +48,18 @@ public class CourseController {
     private CourseMapper courseMapper;
 
     @GetMapping("/all")
-    public ResponseEntity<Default> getCourses(
+    public ResponseEntity<PaginatedResponse<CourseRes>> getCourses(
             @RequestParam(required = false) String userId,
             @RequestParam(required = false) String category,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "6") int size,
+            @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "true") boolean ascending
+            @RequestParam(defaultValue = "desc") String order
     )
     {
 
         int pageNumber = page > 0 ? page - 1 : 0;
-        Sort sort = ascending ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Sort sort = Objects.equals(order, "asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(pageNumber, size, sort);
 
         Page<Courses> allCourses = coursesRepo.findAll(pageable);
@@ -69,25 +70,27 @@ public class CourseController {
                     Double price = pricingRepo.getMinPlanPriceByCourseId(course.getId());
                     Double avgRating = ratingRepo.avgRatingOfCourse(course.getId());
                     Integer totalRating = ratingRepo.totalRatingofCourse(course.getId());
-                    Integer upcount = reviewRepo.countReviewByCourseIdAndVoteType(9L, Review.VoteType.UPVOTE);
-                    Integer downcount = reviewRepo.countReviewByCourseIdAndVoteType(9L, Review.VoteType.DOWNVOTE);
+                    Integer upCount = reviewRepo.countReviewByCourseIdAndVoteType(course.getId(), Review.VoteType.UPVOTE);
+                    Integer downCount = reviewRepo.countReviewByCourseIdAndVoteType(course.getId(), Review.VoteType.DOWNVOTE);
                     dto.setPrice(price);
                     dto.setAvgRating(avgRating);
                     dto.setTotalRating(totalRating);
-                    dto.setUpvote(upcount);
-                    dto.setDownvote(downcount);
+                    dto.setUpvote(upCount);
+                    dto.setDownvote(downCount);
                     return dto;
                 })
                 .toList();
 
         PaginatedResponse<CourseRes> paginatedResponse = new PaginatedResponse<>(
+                "Courses Fetched Successfully",
+                true,
                 courseList,
                 allCourses.getNumber() + 1,
                 allCourses.getSize(),
                 allCourses.getTotalElements(),
                 allCourses.getTotalPages()
         );
-        return ResponseEntity.ok().body(new Default("Courses Fetched Successfully", true, null, paginatedResponse));
+        return ResponseEntity.ok().body(paginatedResponse);
     }
 
     @GetMapping("/{id}")
@@ -104,8 +107,21 @@ public class CourseController {
     }
 
     @GetMapping("/category/{category_id}")
-    public ResponseEntity<Default> getCoursebyCateoryId(@PathVariable String category_id){
-       List<CourseRes> courses = coursesRepo.findByCategoryId(category_id)
+    public ResponseEntity<PaginatedResponse<CourseRes>> getCoursebyCateoryId(
+            @PathVariable String category_id, @RequestParam(required = false) String userId,
+            @RequestParam(required = false) String category,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String order
+    ) {
+
+        int pageNumber = page > 0 ? page - 1 : 0;
+        Sort sort = Objects.equals(order, "asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(pageNumber, size, sort);
+
+        Page<Courses> allCourses = coursesRepo.findByCategoryId(category_id, pageable);
+        List<CourseRes> courses = allCourses
                .stream()
                .map(course -> {
                    CourseRes dto = courseMapper.toDto(course);
@@ -123,40 +139,39 @@ public class CourseController {
                })
                .toList();
 
-
-       if(courses.isEmpty()){
-           return ResponseEntity.badRequest().body(new Default("Course Not Found", false, null, null));
-       }
-
-       return ResponseEntity.ok().body(new Default("Course Found", true, null, courses));
+        PaginatedResponse<CourseRes> paginatedResponse = new PaginatedResponse<>(
+                "Courses Fetched Successfully",
+                true,
+                courses,
+                allCourses.getNumber() + 1,
+                allCourses.getSize(),
+                allCourses.getTotalElements(),
+                allCourses.getTotalPages()
+        );
+        return ResponseEntity.ok().body(paginatedResponse);
 
     }
 
     @GetMapping("/slug/{slug}")
     public ResponseEntity<Default> getCoursebySlug(@PathVariable String slug){
-        List<CourseRes> courses= coursesRepo.findAllBySlug(slug)
-                .stream()
-                .map(course -> {
-                    CourseRes dto = courseMapper.toDto(course);
-                    Double price = pricingRepo.getMinPlanPriceByCourseId(course.getId());
-                    Double avgRating = ratingRepo.avgRatingOfCourse(course.getId());
-                    Integer totalRating = ratingRepo.totalRatingofCourse(course.getId());
-                    Integer upcount = reviewRepo.countReviewByCourseIdAndVoteType(9L, Review.VoteType.UPVOTE);
-                    Integer downcount = reviewRepo.countReviewByCourseIdAndVoteType(9L, Review.VoteType.DOWNVOTE);
-                    dto.setPrice(price);
-                    dto.setAvgRating(avgRating);
-                    dto.setTotalRating(totalRating);
-                    dto.setUpvote(upcount);
-                    dto.setDownvote(downcount);
-                    return dto;
-                })
-                .toList();
-
-        if(courses.isEmpty()){
+        Courses course = coursesRepo.findBySlug(slug).orElse(null);
+        if (course == null) {
             return ResponseEntity.badRequest().body(new Default("Course Not Found", false, null, null));
         }
+        CourseRes courseRes = courseMapper.toDto(course);
+        Double price = pricingRepo.getMinPlanPriceByCourseId(course.getId());
+        Double avgRating = ratingRepo.avgRatingOfCourse(course.getId());
+        Integer totalRating = ratingRepo.totalRatingofCourse(course.getId());
+        Integer upCount = reviewRepo.countReviewByCourseIdAndVoteType(course.getId(), Review.VoteType.UPVOTE);
+        Integer downCount = reviewRepo.countReviewByCourseIdAndVoteType(9L, Review.VoteType.DOWNVOTE);
+        courseRes.setPrice(price);
+        courseRes.setAvgRating(avgRating);
+        courseRes.setTotalRating(totalRating);
+        courseRes.setUpvote(upCount);
+        courseRes.setDownvote(downCount);
 
-        return ResponseEntity.ok().body(new Default("Course Found", true, null, courses));
+
+        return ResponseEntity.ok().body(new Default("Course Found", true, null, courseRes));
     }
 
     @PostMapping("/add")
