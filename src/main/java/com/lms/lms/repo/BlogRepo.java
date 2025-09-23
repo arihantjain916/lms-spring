@@ -17,11 +17,11 @@ public interface BlogRepo extends JpaRepository<Blog, String> {
     List<Blog> findAllByUserId(@Param("userId") String userId);
 
     @Query("""
-                SELECT b FROM Blog b 
-                WHERE (:user IS NULL OR b.user = :user) 
+                 SELECT b FROM Blog b\s
+                 WHERE (:user IS NULL OR b.user = :user)\s
                   AND (:category IS NULL OR b.category = :category)
                   ORDER BY b.createdAt DESC
-            """)
+            \s""")
     Page<Blog> findByUserAndCategory(
             @Param("user") User user,
             @Param("category") Blog.Category category,
