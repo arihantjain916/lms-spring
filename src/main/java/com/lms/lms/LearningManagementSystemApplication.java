@@ -10,13 +10,17 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.TimeZone;
 
 @SpringBootApplication
 @RestController
 public class LearningManagementSystemApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(LearningManagementSystemApplication.class, args);
+
+        TimeZone.setDefault(TimeZone.getTimeZone("GMT+05:30"));
+
+        SpringApplication.run(LearningManagementSystemApplication.class, args);
 	}
 
     @GetMapping("/health")
