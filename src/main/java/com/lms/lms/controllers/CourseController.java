@@ -3,12 +3,17 @@ package com.lms.lms.controllers;
 import com.lms.lms.dto.request.CourseReq;
 import com.lms.lms.dto.response.CourseRes;
 import com.lms.lms.dto.response.Default;
+import com.lms.lms.dto.response.PaginatedResponse;
 import com.lms.lms.mappers.CourseMapper;
 import com.lms.lms.modals.Courses;
 import com.lms.lms.modals.Review;
 import com.lms.lms.repo.*;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -42,9 +47,22 @@ public class CourseController {
     private CourseMapper courseMapper;
 
     @GetMapping("/all")
-    public Iterable<CourseRes> getCourses()
+    public ResponseEntity<Default> getCourses(
+            @RequestParam(required = false) String userId,
+            @RequestParam(required = false) String category,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "6") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "true") boolean ascending
+    )
     {
-        return coursesRepo.findAll()
+
+        int pageNumber = page > 0 ? page - 1 : 0;
+        Sort sort = ascending ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(pageNumber, size, sort);
+
+        Page<Courses> allCourses = coursesRepo.findAll(pageable);
+        List<CourseRes> courseList = allCourses
                 .stream()
                 .map(course -> {
                     CourseRes dto = courseMapper.toDto(course);
@@ -61,6 +79,15 @@ public class CourseController {
                     return dto;
                 })
                 .toList();
+
+        PaginatedResponse<CourseRes> paginatedResponse = new PaginatedResponse<>(
+                courseList,
+                allCourses.getNumber() + 1,
+                allCourses.getSize(),
+                allCourses.getTotalElements(),
+                allCourses.getTotalPages()
+        );
+        return ResponseEntity.ok().body(new Default("Courses Fetched Successfully", true, null, paginatedResponse));
     }
 
     @GetMapping("/{id}")
