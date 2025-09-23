@@ -27,10 +27,16 @@ public class AssetMeta {
     @JoinColumn(name = "asset_id", nullable = false)
     private Asset asset;
 
+    @Column(nullable = false)
     private Long size;
+
+    @Column(nullable = false)
     private String extension;
+    @Column(nullable = false)
     private String mimeType;
+    @Column(nullable = false)
     private String description;
+    @Column(nullable = false)
     private String visibility;
 
 

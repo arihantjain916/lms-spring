@@ -1,6 +1,7 @@
 package com.lms.lms.modals;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,15 +21,21 @@ public class Payments {
     private String id;
 
     @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @ManyToOne
+    @JoinColumn(name = "course_id", nullable = false)
     private Courses course;
 
     @ManyToOne
     private Pricing_Plans pricingPlan;
 
+    @Min(0)
+    @Column(nullable = false)
     private Double amount;
+
+    @Column(nullable = false)
     private String currency;
 
     @Enumerated(EnumType.STRING)

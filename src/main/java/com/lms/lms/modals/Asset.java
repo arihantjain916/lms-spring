@@ -23,16 +23,21 @@ public class Asset {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
+
+    @Column(nullable = false)
     private String url;
 
+    @Column(nullable = false)
     private String public_id;
 
+    @Column(nullable = false)
     private String name;
 
+    @Column(nullable = false)
     private String type;
 
     @ManyToOne
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @CreationTimestamp

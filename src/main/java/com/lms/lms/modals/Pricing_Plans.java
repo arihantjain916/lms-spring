@@ -2,6 +2,7 @@ package com.lms.lms.modals;
 
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
@@ -26,13 +27,14 @@ public class Pricing_Plans {
     private String title,description, currency;
 
     @Column(nullable = false)
+    @Min(0)
     private Double price;
 
     @Column(nullable = false)
-    private PlanType planType = PlanType.LIFETIME;
+    private PlanType planType;
 
     @ManyToOne
-    @JoinColumn(name = "course_id")
+    @JoinColumn(name = "course_id", nullable = false)
     private Courses courses;
 
     @Column(nullable = false, updatable = false)

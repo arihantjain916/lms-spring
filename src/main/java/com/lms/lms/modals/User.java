@@ -1,6 +1,7 @@
 package com.lms.lms.modals;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -22,13 +23,15 @@ public class User {
     private String id;
 
     @Column(unique = true, nullable = false)
-    private String name = "Arihant Jain";
+    private String name;
 
     @Column(unique = true, nullable = false)
     private String username;
 
+    @Email
     @Column(unique = true, nullable = false)
     private String email;
+
 
     @Column(nullable = false)
     private String password;
