@@ -23,6 +23,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/blog")
@@ -52,7 +53,7 @@ public class BlogController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "6") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "true") boolean ascending
+            @RequestParam(defaultValue = "desc") String order
     ) {
         try {
             Blog.Category categoryValue = null;
@@ -74,7 +75,7 @@ public class BlogController {
             }
 
             int pageNumber = page > 0 ? page - 1 : 0;
-            Sort sort = ascending ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+            Sort sort = Objects.equals(order, "asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
             Pageable pageable = PageRequest.of(pageNumber, size, sort);
             Page<Blog> blogs = blogRepo.findByUserAndCategory(user, categoryValue, pageable);
 
@@ -91,13 +92,15 @@ public class BlogController {
 //
 //            blogRes.add(pagination);
             PaginatedResponse<BlogRes> paginatedResponse = new PaginatedResponse<>(
+                    "Blog Fetched Successfully",
+                    true,
                     blogRes,
                     blogs.getNumber() + 1,
                     blogs.getSize(),
                     blogs.getTotalElements(),
                     blogs.getTotalPages()
             );
-            return ResponseEntity.ok().body(new Default("Blog Fetched Successfully", true, null, paginatedResponse));
+            return ResponseEntity.ok().body(paginatedResponse);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
