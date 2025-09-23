@@ -10,6 +10,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PaginatedResponse<T> {
+    private String message;
+    private Boolean status;
     private List<T> data;
     private int currentPage;
     private int size;
