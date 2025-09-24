@@ -30,6 +30,12 @@ public class CourseStats {
     @Column(nullable = false)
     private String userId;
 
+    private String ip;
+
+    private String userAgent;
+
+    private String referrer;
+
     @Column(nullable = false, updatable = false)
     @CreationTimestamp
     private Date createdAt;
