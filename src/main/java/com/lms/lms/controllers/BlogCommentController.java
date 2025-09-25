@@ -1,5 +1,7 @@
 package com.lms.lms.controllers;
 
+import com.lms.lms.GlobalValue.UserDetails;
+import com.lms.lms.dto.request.BlogCommentReq;
 import com.lms.lms.dto.response.BlogCommentRes;
 import com.lms.lms.dto.response.Default;
 import com.lms.lms.dto.response.PaginatedResponse;
@@ -7,6 +9,7 @@ import com.lms.lms.mappers.BlogCommentMapper;
 import com.lms.lms.modals.BlogComment;
 import com.lms.lms.repo.BlogCommentRepo;
 import com.lms.lms.repo.BlogRepo;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -30,6 +33,9 @@ public class BlogCommentController {
 
     @Autowired
     private BlogCommentMapper blogCommentMapper;
+
+    @Autowired
+    private UserDetails userDetails;
 
     @GetMapping("/{id}/comments")
 
@@ -73,5 +79,34 @@ public class BlogCommentController {
         }
     }
 
+    @PostMapping("/comment")
+    public ResponseEntity<Default> saveComment(@Valid @RequestBody BlogCommentReq blogComment) {
+        try {
+            var user = userDetails.userDetails();
+            if (user == null) {
+                return ResponseEntity.badRequest().body(new Default("User Not Found", false, null, null));
+            }
+
+            var blog = blogRepo.findById(blogComment.getBlogId()).orElse(null);
+            if (blog == null) {
+                return ResponseEntity.badRequest().body(new Default("Blog Not Found", false, null, null));
+            }
+
+            BlogComment isUserAlreadyCommented = blogCommentRepo.findByBlogId_IdAndUserId_Id(user.getId(), blogComment.getBlogId()).orElse(null);
+
+            if (isUserAlreadyCommented != null) {
+                return ResponseEntity.badRequest().body(new Default("User Already Commented", false, null, null));
+            }
+            BlogComment blogComment1 = new BlogComment();
+            blogComment1.setBlog(blog);
+            blogComment1.setUser(user);
+            blogComment1.setComment(blogComment.getComment());
+            blogCommentRepo.save(blogComment1);
+
+            return ResponseEntity.ok().body(new Default("Comment Added Successfully", true, null, null));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
 
 }
