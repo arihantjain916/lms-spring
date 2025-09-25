@@ -30,6 +30,8 @@ public class CourseRes {
     private Integer upvote;
     private Integer downvote;
 
+    private Boolean isFeatured;
+
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:mm")
     private LocalDateTime createdAt;
 

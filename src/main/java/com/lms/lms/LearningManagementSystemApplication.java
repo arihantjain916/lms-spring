@@ -4,6 +4,7 @@ import com.lms.lms.dto.response.Default;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -14,6 +15,7 @@ import java.util.TimeZone;
 
 @SpringBootApplication
 @RestController
+@EnableScheduling
 public class LearningManagementSystemApplication {
 
 	public static void main(String[] args) {
