@@ -6,7 +6,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface BlogCommentRepo extends JpaRepository<BlogComment, String> {
 
@@ -18,5 +17,5 @@ public interface BlogCommentRepo extends JpaRepository<BlogComment, String> {
 
     Page<BlogComment> findByBlogId_IdOrderByCreatedAtAsc(String blogId, Pageable pageable);
 
-    Optional<BlogComment> findByBlogId_IdAndUserId_Id(String blogId, String userId);
+    Boolean existsByBlogId_IdAndUserId_Id(String blogId, String userId);
 }
