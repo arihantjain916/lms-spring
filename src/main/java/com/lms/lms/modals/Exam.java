@@ -36,7 +36,9 @@ public class Exam {
     private Instant endsAt;
 
     @Column(nullable = false)
-    private Integer timeLimitMin;
+    private Integer timeLimitMin, totalMarks, passMarks;
+
+
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
