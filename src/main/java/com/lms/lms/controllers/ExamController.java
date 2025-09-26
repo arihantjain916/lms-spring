@@ -81,6 +81,8 @@ public class ExamController {
             exam.setEndsAt(convertStringToInstant(examReq.getEndsAt()));
             exam.setTimeLimitMin(examReq.getTimeLimitMin());
             exam.setStatus(Exam.Staus.DRAFT);
+            exam.setPassMarks(examReq.getPassMarks());
+            exam.setTotalMarks(examReq.getTotalMarks());
             exam.setUser(user);
 
             examRepo.save(exam);
@@ -130,6 +132,8 @@ public class ExamController {
             examDetails.setEndsAt(convertStringToInstant(examReq.getEndsAt()));
             examDetails.setTimeLimitMin(examReq.getTimeLimitMin());
             examDetails.setStatus(Exam.Staus.DRAFT);
+            examDetails.setPassMarks(examReq.getPassMarks());
+            examDetails.setTotalMarks(examReq.getTotalMarks());
 
             examRepo.save(examDetails);
             return ResponseEntity.ok().body(new Default("Exam Details Updated Successfully", true, null, null));
