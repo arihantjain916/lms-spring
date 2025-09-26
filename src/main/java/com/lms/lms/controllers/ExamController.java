@@ -97,14 +97,45 @@ public class ExamController {
             if (examDetails == null) {
                 return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
             }
+            Exam.Staus ExamStatus = null;
+            try {
+                ExamStatus = Exam.Staus.valueOf(status.toUpperCase());
+            } catch (Exception ex) {
+                return ResponseEntity.badRequest().body(new Default("Invalid Status. Status Include DRAFT, UnPUBLISHED,PUBLISHED, ARCHIVED", true, null, null));
+            }
 
-            Exam.Staus ExamStatus = Exam.Staus.valueOf(status.toUpperCase());
             examRepo.updateStaus(examId, ExamStatus);
             return ResponseEntity.ok().body(new Default("Status Updated Successfully", true, null, null));
         } catch (Exception ex) {
             return ResponseEntity.internalServerError().body(new Default(ex.getMessage(), false, null, null));
         }
+    }
 
+    @PutMapping("/update")
+    public ResponseEntity<Default> updateExam(@Valid @RequestBody ExamReq examReq) {
+        try {
+            if (examReq.getId().isBlank()) {
+                return ResponseEntity.badRequest().body(new Default("Exam Id is Required", false, null, null));
+            }
+            var examDetails = examRepo.findById(examReq.getId()).orElse(null);
+            if (examDetails == null) {
+                return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
+            }
+
+            examDetails.setShuffleQuestions(Boolean.TRUE.equals(examReq.getShuffleQuestions()) || examReq.getShuffleQuestions() == null);
+            examDetails.setShowScoreImmediately(Boolean.TRUE.equals(examReq.getShowScoreImmediately()) || examReq.getShuffleQuestions() == null);
+            examDetails.setMaxAttempts(examReq.getMaxAttempts());
+            examDetails.setTitle(examReq.getTitle());
+            examDetails.setStartsAt(convertStringToInstant(examReq.getStartsAt()));
+            examDetails.setEndsAt(convertStringToInstant(examReq.getEndsAt()));
+            examDetails.setTimeLimitMin(examReq.getTimeLimitMin());
+            examDetails.setStatus(Exam.Staus.DRAFT);
+
+            examRepo.save(examDetails);
+            return ResponseEntity.ok().body(new Default("Exam Details Updated Successfully", true, null, null));
+        } catch (Exception ex) {
+            return ResponseEntity.internalServerError().body(new Default(ex.getMessage(), false, null, null));
+        }
     }
 
     public Instant convertStringToInstant(String date) {
