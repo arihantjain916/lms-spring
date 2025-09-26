@@ -2,7 +2,10 @@ package com.lms.lms.controllers;
 
 import com.lms.lms.GlobalValue.UserDetails;
 import com.lms.lms.dto.request.ExamReq;
+import com.lms.lms.dto.response.CustomCourseRes;
 import com.lms.lms.dto.response.Default;
+import com.lms.lms.dto.response.ExamRes;
+import com.lms.lms.mappers.ExamMapper;
 import com.lms.lms.modals.Exam;
 import com.lms.lms.repo.CoursesRepo;
 import com.lms.lms.repo.ExamRepo;
@@ -29,6 +32,8 @@ public class ExamController {
 
     @Autowired
     private UserDetails userDetails;
+    @Autowired
+    private ExamMapper examMapper;
 
     @GetMapping("/{courseId}")
     public ResponseEntity<Default> getAllExams(
@@ -42,7 +47,13 @@ public class ExamController {
             }
             var ExamStatus = Exam.Staus.valueOf(status);
             List<Exam> exams = examRepo.findByCourses_IdAndStatus(courseId, ExamStatus);
-            return ResponseEntity.ok().body(new Default("Exam Fetched Successfully", true, null, exams));
+            List<ExamRes> list = exams.stream().map(exam -> {
+                ExamRes examRes = examMapper.toDto(exam);
+                CustomCourseRes courseRes = new CustomCourseRes(exam.getCourses().getId(), exam.getCourses().getTitle(), exam.getCourses().getDescription());
+                examRes.setCourse(courseRes);
+                return examRes;
+            }).toList();
+            return ResponseEntity.ok().body(new Default("Exam Fetched Successfully", true, null, list));
         } catch (Exception ex) {
             return ResponseEntity.internalServerError().body(new Default(ex.getMessage(), false, null, null));
         }
