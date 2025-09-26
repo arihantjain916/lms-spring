@@ -1,8 +1,12 @@
 package com.lms.lms.dto.response;
 
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+
+import java.time.Instant;
+import java.util.Date;
 
 @Data
 @AllArgsConstructor
@@ -18,10 +22,11 @@ public class ExamRes {
     private String title;
 
 
-    private String startsAt;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yy HH:mm", timezone = "Asia/Kolkata")
+    private Instant startsAt;
 
-
-    private String endsAt;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yy HH:mm", timezone = "Asia/Kolkata")
+    private Instant endsAt;
 
 
     private Integer timeLimitMin;
@@ -29,6 +34,9 @@ public class ExamRes {
     private CustomCourseRes course;
 
     private UserRes user;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:mm:ss", timezone = "Asia/Kolkata")
+    private Date createdAt;
 
 }
 
