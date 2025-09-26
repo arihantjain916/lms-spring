@@ -15,6 +15,12 @@ public class ExamReq {
     @NotNull(message = "Exam max attempts is required")
     private Integer maxAttempts;
 
+    @NotNull(message = "Exam total marks is required")
+    private Integer totalMarks;
+
+    @NotNull(message = "Exam pass marks is required")
+    private Integer passMarks;
+
     @NotNull(message = "Exam title is required")
     private String title;
 

@@ -17,7 +17,7 @@ public class ExamRes {
     private Boolean shuffleQuestions;
     private Boolean showScoreImmediately;
 
-    private Integer maxAttempts;
+    private Integer maxAttempts, totalMarks, passMarks;
 
     private String title;
 
@@ -34,6 +34,7 @@ public class ExamRes {
     private CustomCourseRes course;
 
     private UserRes user;
+
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:mm:ss", timezone = "Asia/Kolkata")
     private Date createdAt;
