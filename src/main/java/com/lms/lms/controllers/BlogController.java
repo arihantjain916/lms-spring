@@ -1,6 +1,7 @@
 package com.lms.lms.controllers;
 
 
+import com.lms.lms.GlobalValue.UserDetails;
 import com.lms.lms.dto.request.BlogReq;
 import com.lms.lms.dto.response.BlogRes;
 import com.lms.lms.dto.response.Default;
@@ -17,9 +18,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -38,12 +37,13 @@ public class BlogController {
     @Autowired
     private BlogMapper blogMapper;
 
-    public User userDetails() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserDetails user = (UserDetails) authentication.getPrincipal();
-
-        return userRepo.findById(user.getUsername()).orElse(null);
-    }
+    @Autowired
+    private UserDetails userDetails;
+//    public User userDetails() {
+//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+//        UserDetails user = (UserDetails) authentication.getPrincipal();
+//        return userRepo.findById(user.getUsername()).orElse(null);
+//    }
 
 
     @GetMapping
@@ -106,10 +106,11 @@ public class BlogController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
     @PostMapping("/add")
     public ResponseEntity<Default> save(@Valid @RequestBody BlogReq blogReq) {
         try {
-            var isUserExist = userDetails();
+            var isUserExist = userDetails.userDetails();
 
             if (isUserExist == null) {
                 return ResponseEntity.badRequest().body(new Default("User don't exist", false, null, null));
@@ -144,60 +145,73 @@ public class BlogController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
     @PutMapping("/update")
     public ResponseEntity<Default> updateBlogById(@Valid @RequestBody BlogReq blogReq) {
         try {
             if (blogReq.getId() == null || blogReq.getId().isEmpty()) {
                 return ResponseEntity.badRequest().body(new Default("Blog Id is required", false, null, null));
             }
+            var authorities = userDetails.getAuthorities();
 
             var isBlogExist = blogRepo.findById(blogReq.getId()).orElse(null);
 
             if (isBlogExist == null) {
                 return ResponseEntity.badRequest().body(new Default("Blog Not Found", false, null, null));
             }
+            var user = userDetails.userDetails();
 
-            var user = userDetails();
+            boolean isAdmin = authorities.stream()
+                    .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
 
             boolean isBlogOwner = user.getId().equals(isBlogExist.getUser().getId());
-            if (!isBlogOwner) {
-                return ResponseEntity.badRequest().body(new Default("You are not authorized to update this blog", false, null, null));
+
+            if (isAdmin || isBlogOwner) {
+                var isSlugExist = blogRepo.findBySlug(blogReq.getSlug()).orElse(null);
+                if (isSlugExist != null && !isSlugExist.getId().equals(blogReq.getId())) {
+                    return ResponseEntity.badRequest().body(new Default("Blog already exist with same slug", false, null, null));
+                }
+
+                var isTitleExist = blogRepo.findByTitle(blogReq.getTitle()).orElse(null);
+                if (isTitleExist != null && !isTitleExist.getId().equals(blogReq.getId())) {
+                    return ResponseEntity.badRequest().body(new Default("Blog already exist with same Title", false, null, null));
+                }
+
+                isBlogExist.setSlug(blogReq.getSlug());
+                isBlogExist.setTitle(blogReq.getTitle());
+                isBlogExist.setDescription(blogReq.getDescription());
+                isBlogExist.setContent(blogReq.getContent());
+                isBlogExist.setRead_time(blogReq.getRead_time());
+                isBlogExist.setStatus(blogReq.getStatus());
+                isBlogExist.setTag(blogReq.getTag());
+                isBlogExist.setImageUrl(blogReq.getImage_url());
+                isBlogExist.setUser(isBlogExist.getUser());
+                blogRepo.save(isBlogExist);
+                return ResponseEntity.ok().body(new Default("Blog Updated Successfully", true, null, null));
             }
 
-            var isSlugExist = blogRepo.findBySlug(blogReq.getSlug()).orElse(null);
-            if (isSlugExist != null && !isSlugExist.getId().equals(blogReq.getId())) {
-                return ResponseEntity.badRequest().body(new Default("Blog already exist with same slug", false, null, null));
-            }
-
-            var isTitleExist = blogRepo.findByTitle(blogReq.getTitle()).orElse(null);
-            if (isTitleExist != null && !isTitleExist.getId().equals(blogReq.getId())) {
-                return ResponseEntity.badRequest().body(new Default("Blog already exist with same Title", false, null, null));
-            }
-
-            isBlogExist.setSlug(blogReq.getSlug());
-            isBlogExist.setTitle(blogReq.getTitle());
-            isBlogExist.setDescription(blogReq.getDescription());
-            isBlogExist.setContent(blogReq.getContent());
-            isBlogExist.setRead_time(blogReq.getRead_time());
-            isBlogExist.setStatus(blogReq.getStatus());
-            isBlogExist.setTag(blogReq.getTag());
-            isBlogExist.setImageUrl(blogReq.getImage_url());
-            isBlogExist.setUser(isBlogExist.getUser());
-            blogRepo.save(isBlogExist);
-            return ResponseEntity.ok().body(new Default("Blog Updated Successfully", true, null, null));
-
+            return ResponseEntity.badRequest().body(new Default("You are not authorized to perform this action", true, null, null));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<Default> deleteBlogById(@PathVariable String id) {
         try {
-            var user = userDetails();
+            var user = userDetails.userDetails();
+            var authorities = userDetails.getAuthorities();
             var isBlogExist = blogRepo.findById(id).orElse(null);
             if (isBlogExist == null) {
                 return ResponseEntity.badRequest().body(new Default("Blog Not Found", false, null, null));
+            }
+
+            boolean isAdmin = authorities.stream()
+                    .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
+            if (isAdmin) {
+                blogRepo.deleteById(id);
+                return ResponseEntity.ok().body(new Default("Blog Deleted Successfully", true, null, null));
             }
 
             boolean isBlogOwner = user.getId().equals(isBlogExist.getUser().getId());
@@ -214,7 +228,7 @@ public class BlogController {
     @GetMapping("/me")
     public ResponseEntity<Default> getUserBlog() {
         try {
-            var user = userDetails();
+            var user = userDetails.userDetails();
             List<BlogRes> blogRes = blogRepo.findAllByUserId(user.getId()).stream().map(blogMapper::toDto).toList();
 
             return ResponseEntity.ok().body(new Default("Blog Fetched Successfully", true, null, blogRes));
