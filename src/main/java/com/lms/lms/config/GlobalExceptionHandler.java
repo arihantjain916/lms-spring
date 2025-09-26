@@ -1,6 +1,5 @@
 package com.lms.lms.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lms.lms.dto.response.ErrorRes;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,8 +19,6 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)

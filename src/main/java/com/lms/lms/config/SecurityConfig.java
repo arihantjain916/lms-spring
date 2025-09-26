@@ -11,6 +11,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -27,6 +28,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     @Autowired
@@ -37,6 +39,9 @@ public class SecurityConfig {
 
     @Autowired
     private UserDetailsService userDetailsService;
+
+    @Autowired
+    private CustomAccessDeniedHandler customAccessDeniedHandler;
 
     @Autowired
     private PublicRoutes publicRoutes;
@@ -59,6 +64,7 @@ public class SecurityConfig {
 //                        .requestMatchers(HttpMethod.GET, "/blog").permitAll()
                         .requestMatchers(HttpMethod.GET, publicRoutes.getPublicRoutes()).permitAll()
                         .anyRequest().authenticated())
+                .exceptionHandling(ex -> ex.accessDeniedHandler(customAccessDeniedHandler))
 //                .exceptionHandling(ex -> ex
 //                        .accessDeniedHandler((req, res, e) -> {
 //                            globalExceptionHandler.handleException(
