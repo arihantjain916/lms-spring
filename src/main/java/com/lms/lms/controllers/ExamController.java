@@ -90,6 +90,23 @@ public class ExamController {
         }
     }
 
+    @PutMapping("/{examId}/{status}")
+    public ResponseEntity<Default> updateStatus(@PathVariable String examId, @PathVariable String status) {
+        try {
+            var examDetails = examRepo.findById(examId).orElse(null);
+            if (examDetails == null) {
+                return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
+            }
+
+            Exam.Staus ExamStatus = Exam.Staus.valueOf(status.toUpperCase());
+            examRepo.updateStaus(examId, ExamStatus);
+            return ResponseEntity.ok().body(new Default("Status Updated Successfully", true, null, null));
+        } catch (Exception ex) {
+            return ResponseEntity.internalServerError().body(new Default(ex.getMessage(), false, null, null));
+        }
+
+    }
+
     public Instant convertStringToInstant(String date) {
         try {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
