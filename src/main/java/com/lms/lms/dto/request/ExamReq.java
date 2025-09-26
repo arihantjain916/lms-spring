@@ -12,6 +12,7 @@ public class ExamReq {
     private Boolean shuffleQuestions;
     private Boolean showScoreImmediately;
 
+    @NotNull(message = "Exam max attempts is required")
     private Integer maxAttempts;
 
     @NotNull(message = "Exam title is required")
