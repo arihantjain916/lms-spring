@@ -142,6 +142,20 @@ public class ExamController {
         }
     }
 
+    @DeleteMapping("/{examId}/delete")
+    public ResponseEntity<Default> deleteExam(@PathVariable String examId) {
+        try {
+            var examDetails = examRepo.findById(examId).orElse(null);
+            if (examDetails == null) {
+                return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
+            }
+            examRepo.updateStaus(examId, Exam.Staus.ARCHIVED);
+            return ResponseEntity.ok().body(new Default("Course Deleted Successfully", true, null, null));
+        } catch (Exception ex) {
+            return ResponseEntity.internalServerError().body(new Default(ex.getMessage(), false, null, null));
+        }
+    }
+
     public Instant convertStringToInstant(String date) {
         try {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
