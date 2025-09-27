@@ -189,7 +189,7 @@ public class ExamController {
 
             List<ExamAttempt> isExamAttempt =examAttemptRepo.findByUser_IdAndExam_Id(user.getId(), examDetails.getId());
 
-            if (isExamAttempt.size() > examDetails.getMaxAttempts()) {
+            if (isExamAttempt.size() >= examDetails.getMaxAttempts()) {
                 return ResponseEntity.badRequest().body(new Default("You have already Attempted the Exam", false, null, null));
             }
 
@@ -208,7 +208,7 @@ public class ExamController {
         }
     }
 
-    @PutMapping("/{examId}/markComplete")
+    @PutMapping("/markComplete/{examId}")
     public ResponseEntity<Default> markCompleted(@PathVariable String examId){
         try{
             var examDetails = examRepo.findById(examId).orElse(null);
