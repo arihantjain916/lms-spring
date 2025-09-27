@@ -38,8 +38,6 @@ public class Exam {
     @Column(nullable = false)
     private Integer timeLimitMin, totalMarks, passMarks;
 
-
-
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -63,8 +61,8 @@ public class Exam {
     public enum Staus {
         DRAFT,
         PUBLISHED,
-        UNPUBLISHED,
-        CLOSED, ARCHIVED
+        CLOSED,
+        ARCHIVED
     }
 
 }
