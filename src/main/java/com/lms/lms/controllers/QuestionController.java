@@ -1,13 +1,17 @@
 package com.lms.lms.controllers;
 
 import com.lms.lms.GlobalValue.UserDetails;
+import com.lms.lms.dto.request.OptionReq;
 import com.lms.lms.dto.request.QuestionReq;
 import com.lms.lms.dto.response.Default;
 import com.lms.lms.dto.response.QuestionRes;
 import com.lms.lms.mappers.QuestionMapper;
+import com.lms.lms.modals.QuestionOptions;
 import com.lms.lms.modals.Questions;
 import com.lms.lms.repo.ExamRepo;
+import com.lms.lms.repo.QuestionOptionRepo;
 import com.lms.lms.repo.QuestionRepo;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +30,9 @@ public class QuestionController {
 
     @Autowired
     private QuestionRepo questionRepo;
+
+    @Autowired
+    private QuestionOptionRepo questionOptionRepo;
 
     @Autowired
     private UserDetails userDetails;
@@ -49,11 +56,16 @@ public class QuestionController {
 
     @PreAuthorize("hasAnyRole('ADMIN','INSTRUCTOR')")
     @PostMapping("/add")
+    @Transactional
     public ResponseEntity<Default> addQuestion(@Valid @RequestBody QuestionReq questionReq) {
         try {
             var ExamDetails = examRepo.findById(questionReq.getExamId()).orElse(null);
             if (ExamDetails == null) {
                 return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
+            }
+
+            if(questionReq.getType() == Questions.Type.MCQ && (questionReq.getOptions() == null ||questionReq.getOptions().isEmpty())){
+                return ResponseEntity.badRequest().body(new Default("Options are required for MCQ", false, null, null));
             }
             Questions questions = new Questions();
             questions.setType(questionReq.getType());
@@ -62,6 +74,16 @@ public class QuestionController {
             questions.setDescription(questionReq.getDescription());
             questions.setExam(ExamDetails);
             questionRepo.save(questions);
+
+            if(questionReq.getType() == Questions.Type.MCQ){
+                for(OptionReq option: questionReq.getOptions()){
+                    QuestionOptions option1 = new QuestionOptions();
+                    option1.setOption(option.getOption());
+                    option1.setIsCorrect(option.getIsCorrect());
+                    option1.setQuestions(questions);
+                    questionOptionRepo.save(option1);
+                }
+            }
             return ResponseEntity.ok().body(new Default("Question Created Successfully", true, null, null));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
