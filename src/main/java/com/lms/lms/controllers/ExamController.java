@@ -14,6 +14,7 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -64,6 +65,7 @@ public class ExamController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','INSTRUCTOR')")
     @PostMapping("/create")
     public ResponseEntity<Default> addExam(@Valid @RequestBody ExamReq examReq) {
         try {
@@ -97,6 +99,7 @@ public class ExamController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','INSTRUCTOR')")
     @PutMapping("/{examId}/{status}")
     public ResponseEntity<Default> updateStatus(@PathVariable String examId, @PathVariable String status) {
         try {
@@ -118,6 +121,7 @@ public class ExamController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','INSTRUCTOR')")
     @PutMapping("/update")
     public ResponseEntity<Default> updateExam(@Valid @RequestBody ExamReq examReq) {
         try {
@@ -147,6 +151,7 @@ public class ExamController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','INSTRUCTOR')")
     @DeleteMapping("/{examId}/delete")
     @Transactional
     public ResponseEntity<Default> deleteExam(@PathVariable String examId) {
