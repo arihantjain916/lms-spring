@@ -51,7 +51,6 @@ public class QuestionController {
     @PostMapping("/add")
     public ResponseEntity<Default> addQuestion(@Valid @RequestBody QuestionReq questionReq) {
         try {
-            var user = userDetails.userDetails();
             var ExamDetails = examRepo.findById(questionReq.getExamId()).orElse(null);
             if (ExamDetails == null) {
                 return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
@@ -67,5 +66,47 @@ public class QuestionController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN','INSTRUCTOR')")
+    @PutMapping("/update")
+    public ResponseEntity<Default> updateQuestion(@Valid @RequestBody QuestionReq questionReq) {
+        try {
+            if (questionReq.getId() == null || questionReq.getId().isEmpty()) {
+                return ResponseEntity.badRequest().body(new Default("Question Id is required", false, null, null));
+            }
+            var QuestionDetails = questionRepo.findById(questionReq.getId()).orElse(null);
+            if (QuestionDetails == null) {
+                return ResponseEntity.badRequest().body(new Default("Invalid Question Id", false, null, null));
+            }
+
+            QuestionDetails.setType(questionReq.getType());
+            QuestionDetails.setMarks(questionReq.getMarks());
+            QuestionDetails.setTitle(questionReq.getTitle());
+            QuestionDetails.setDescription(questionReq.getDescription());
+            questionRepo.save(QuestionDetails);
+
+            return ResponseEntity.ok().body(new Default("Question Updated Successfully", true, null, null));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN','INSTRUCTOR')")
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<Default> deleteQuestion(@PathVariable String id) {
+        try {
+            var QuestionDetails = questionRepo.findById(id).orElse(null);
+            if (QuestionDetails == null) {
+                return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
+            }
+
+            questionRepo.delete(QuestionDetails);
+
+            return ResponseEntity.ok().body(new Default("Question Deleted Successfully", true, null, null));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+
     }
 }

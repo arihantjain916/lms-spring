@@ -9,6 +9,8 @@ import com.lms.lms.mappers.ExamMapper;
 import com.lms.lms.modals.Exam;
 import com.lms.lms.repo.CoursesRepo;
 import com.lms.lms.repo.ExamRepo;
+import com.lms.lms.repo.QuestionRepo;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +36,9 @@ public class ExamController {
     private UserDetails userDetails;
     @Autowired
     private ExamMapper examMapper;
+
+    @Autowired
+    private QuestionRepo questionRepo;
 
     @GetMapping("/{courseId}")
     public ResponseEntity<Default> getAllExams(
@@ -143,6 +148,7 @@ public class ExamController {
     }
 
     @DeleteMapping("/{examId}/delete")
+    @Transactional
     public ResponseEntity<Default> deleteExam(@PathVariable String examId) {
         try {
             var examDetails = examRepo.findById(examId).orElse(null);
@@ -150,7 +156,7 @@ public class ExamController {
                 return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
             }
             examRepo.updateStaus(examId, Exam.Staus.ARCHIVED);
-            return ResponseEntity.ok().body(new Default("Course Deleted Successfully", true, null, null));
+            return ResponseEntity.ok().body(new Default("Exam Deleted Successfully", true, null, null));
         } catch (Exception ex) {
             return ResponseEntity.internalServerError().body(new Default(ex.getMessage(), false, null, null));
         }
