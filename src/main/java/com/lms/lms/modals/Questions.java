@@ -9,7 +9,9 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -23,9 +25,9 @@ public class Questions {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "question_options_id")
-    private QuestionOptions options;
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "question_options_id")
+//    private QuestionOptions options;
 
     @Column(nullable = false)
     private Type type;
@@ -52,6 +54,9 @@ public class Questions {
     @Column(nullable = false)
     @UpdateTimestamp
     private Date updatedAt = new Date();
+
+    @OneToMany(mappedBy = "questions", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<QuestionOptions> options = new ArrayList<>();
 
     public enum Type {
         TEXT,
