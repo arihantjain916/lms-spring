@@ -29,7 +29,7 @@ public class ContactUs {
     @Column(nullable = false, columnDefinition = "varchar(255)")
     private String message;
 
-    @Column(nullable = false, columnDefinition = "varchar(20)")
+    @Column(nullable = false)
     private Department department;
 
     @Column(nullable = false, columnDefinition = "varchar(20)")
