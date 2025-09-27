@@ -7,7 +7,9 @@ import com.lms.lms.dto.response.Default;
 import com.lms.lms.dto.response.ExamRes;
 import com.lms.lms.mappers.ExamMapper;
 import com.lms.lms.modals.Exam;
+import com.lms.lms.modals.ExamAttempt;
 import com.lms.lms.repo.CoursesRepo;
+import com.lms.lms.repo.ExamAttemptRepo;
 import com.lms.lms.repo.ExamRepo;
 import com.lms.lms.repo.QuestionRepo;
 import jakarta.transaction.Transactional;
@@ -40,6 +42,10 @@ public class ExamController {
 
     @Autowired
     private QuestionRepo questionRepo;
+
+    @Autowired
+    private ExamAttemptRepo examAttemptRepo;
+
 
     @GetMapping("/{courseId}")
     public ResponseEntity<Default> getAllExams(
@@ -163,6 +169,60 @@ public class ExamController {
             examRepo.updateStaus(examId, Exam.Staus.ARCHIVED);
             return ResponseEntity.ok().body(new Default("Exam Deleted Successfully", true, null, null));
         } catch (Exception ex) {
+            return ResponseEntity.internalServerError().body(new Default(ex.getMessage(), false, null, null));
+        }
+    }
+
+//    @PreAuthorize("hasRole('STUDENT')")
+    @GetMapping("/attempt/{examId}")
+    public ResponseEntity<Default> attemptExam(@PathVariable String examId){
+        try{
+            var user = userDetails.userDetails();
+            if (user == null) {
+                return ResponseEntity.badRequest().body(new Default("User Not Found", false, null, null));
+            }
+
+            var examDetails = examRepo.findById(examId).orElse(null);
+            if (examDetails == null) {
+                return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
+            }
+
+            List<ExamAttempt> isExamAttempt =examAttemptRepo.findByUser_IdAndExam_Id(user.getId(), examDetails.getId());
+
+            if (isExamAttempt.size() > examDetails.getMaxAttempts()) {
+                return ResponseEntity.badRequest().body(new Default("You have already Attempted the Exam", false, null, null));
+            }
+
+            ExamAttempt examAttempt = new ExamAttempt();
+            examAttempt.setIsAttempt(Boolean.TRUE);
+            examAttempt.setExam(examDetails);
+            examAttempt.setUser(examDetails.getUser());
+            examAttempt.setIsCompleted(Boolean.FALSE);
+
+            examAttemptRepo.save(examAttempt);
+
+            return ResponseEntity.ok().body(new Default("Exam Attempted Successfully", false, null, null));
+        }
+        catch (Exception ex) {
+            return ResponseEntity.internalServerError().body(new Default(ex.getMessage(), false, null, null));
+        }
+    }
+
+    @PutMapping("/{examId}/markComplete")
+    public ResponseEntity<Default> markCompleted(@PathVariable String examId){
+        try{
+            var examDetails = examRepo.findById(examId).orElse(null);
+            if (examDetails == null) {
+                return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
+            }
+            var user = userDetails.userDetails();
+            if (user == null) {
+                return ResponseEntity.badRequest().body(new Default("User Not Found", false, null, null));
+            }
+            examAttemptRepo.markExamCompete(examId, Boolean.TRUE);
+            return ResponseEntity.ok().body(new Default("Exam Marked as Completed", false, null, null));
+        }
+        catch (Exception ex) {
             return ResponseEntity.internalServerError().body(new Default(ex.getMessage(), false, null, null));
         }
     }
