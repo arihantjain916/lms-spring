@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -22,6 +24,8 @@ public class QuestionReq {
     private Integer position;
     @NotNull(message = "Description is required")
     private String description;
+
+    private List<OptionReq> options;
 
     @NotNull(message = "ExamId is required")
     private String examId;
