@@ -3,6 +3,8 @@ package com.lms.lms.controllers;
 import com.lms.lms.GlobalValue.UserDetails;
 import com.lms.lms.dto.request.QuestionReq;
 import com.lms.lms.dto.response.Default;
+import com.lms.lms.dto.response.QuestionRes;
+import com.lms.lms.mappers.QuestionMapper;
 import com.lms.lms.modals.Questions;
 import com.lms.lms.repo.ExamRepo;
 import com.lms.lms.repo.QuestionRepo;
@@ -10,10 +12,9 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/question")
@@ -28,6 +29,23 @@ public class QuestionController {
 
     @Autowired
     private UserDetails userDetails;
+
+    @Autowired
+    private QuestionMapper questionMapper;
+
+    @GetMapping("/{examId}")
+    public ResponseEntity<Default> getAllQuestionsByExamId(@PathVariable String examId) {
+        try {
+            var ExamDetails = examRepo.findById(examId).orElse(null);
+            if (ExamDetails == null) {
+                return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
+            }
+            List<QuestionRes> questions = questionRepo.findByExam_Id(examId).stream().map(questionMapper::toDto).toList();
+            return ResponseEntity.ok().body(new Default("Question Fetched Successfully", true, null, questions));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
 
     @PreAuthorize("hasAnyRole('ADMIN','INSTRUCTOR')")
     @PostMapping("/add")
