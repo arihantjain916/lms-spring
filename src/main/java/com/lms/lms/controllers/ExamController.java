@@ -8,13 +8,11 @@ import com.lms.lms.dto.response.ExamRes;
 import com.lms.lms.mappers.ExamMapper;
 import com.lms.lms.modals.Exam;
 import com.lms.lms.modals.ExamAttempt;
-import com.lms.lms.repo.CoursesRepo;
-import com.lms.lms.repo.ExamAttemptRepo;
-import com.lms.lms.repo.ExamRepo;
-import com.lms.lms.repo.QuestionRepo;
+import com.lms.lms.repo.*;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -34,6 +32,9 @@ public class ExamController {
 
     @Autowired
     private ExamRepo examRepo;
+
+    @Autowired
+    private EnrollmentRepo enrollmentRepo;
 
     @Autowired
     private UserDetails userDetails;
@@ -187,6 +188,12 @@ public class ExamController {
                 return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
             }
 
+            var isUserEnrolled = enrollmentRepo.existsByUser_IdAndCourses_Id(user.getId(), examDetails.getCourses().getId());
+
+            if (!isUserEnrolled) {
+                return ResponseEntity.badRequest().body(new Default("User is not enrolled in the course", false, null, null));
+            }
+
             List<ExamAttempt> isExamAttempt =examAttemptRepo.findByUser_IdAndExam_Id(user.getId(), examDetails.getId());
 
             if (isExamAttempt.size() >= examDetails.getMaxAttempts()) {
@@ -218,6 +225,10 @@ public class ExamController {
             var user = userDetails.userDetails();
             if (user == null) {
                 return ResponseEntity.badRequest().body(new Default("User Not Found", false, null, null));
+            }
+            var isExamAttempt = examAttemptRepo.findByUser_IdAndExam_Id(user.getId(), examId);
+            if (isExamAttempt.isEmpty()) {
+                return ResponseEntity.badRequest().body(new Default("User not attempt exam yet.", false, null, null));
             }
             examAttemptRepo.markExamCompete(examId, Boolean.TRUE);
             return ResponseEntity.ok().body(new Default("Exam Marked as Completed", false, null, null));
