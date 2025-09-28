@@ -225,29 +225,6 @@ public class ExamController {
         }
     }
 
-//    @PutMapping("/markComplete/{examId}")
-//    public ResponseEntity<Default> markCompleted(@PathVariable String examId){
-//        try{
-//            var examDetails = examRepo.findById(examId).orElse(null);
-//            if (examDetails == null) {
-//                return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
-//            }
-//            var user = userDetails.userDetails();
-//            if (user == null) {
-//                return ResponseEntity.badRequest().body(new Default("User Not Found", false, null, null));
-//            }
-//            var isExamAttempt = examAttemptRepo.findByUser_IdAndExam_Id(user.getId(), examId);
-//            if (isExamAttempt.isEmpty()) {
-//                return ResponseEntity.badRequest().body(new Default("User not attempt exam yet.", false, null, null));
-//            }
-//            examAttemptRepo.markExamCompete(examId, Boolean.TRUE);
-//            return ResponseEntity.ok().body(new Default("Exam Marked as Completed", false, null, null));
-//        }
-//        catch (Exception ex) {
-//            return ResponseEntity.internalServerError().body(new Default(ex.getMessage(), false, null, null));
-//        }
-//    }
-
     @PutMapping("/submit")
     @Transactional
     public ResponseEntity<Default> submitExam(@Valid @RequestBody ExamSubmitReq examSubmitReq){
@@ -292,6 +269,31 @@ public class ExamController {
         }
         catch (Exception ex) {
             return ResponseEntity.internalServerError().body(new Default(ex.getMessage(), false, null, null));
+        }
+    }
+
+    @GetMapping("{examId}/reportCard")
+    public ResponseEntity<Default> getReportCard(@PathVariable String examId){
+        try{
+            var user = userDetails.userDetails();
+            var examDetails = examRepo.findById(examId).orElse(null);
+            if (examDetails == null) {
+                return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
+            }
+            ReportCard reportCard = reportCardRepo.findByUser_IdAndExam_Id(user.getId(), examId);
+            if(reportCard == null){
+                return ResponseEntity.badRequest().body(new Default("Report Card Not Generated Yet", false, null, null));
+            }
+            ReportCardRes res = new ReportCardRes(
+                    reportCard.getId(),
+                    reportCard.getTotalMarks(),
+                    reportCard.getObtainedMarks(),
+                    reportCard.getPercentage(),
+                    reportCard.getGrade()
+            );
+            return ResponseEntity.ok().body(new Default("Report Card Generated Successfully", true, null, res));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
     }
 
