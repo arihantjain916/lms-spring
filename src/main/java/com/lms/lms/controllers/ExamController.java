@@ -2,12 +2,15 @@ package com.lms.lms.controllers;
 
 import com.lms.lms.GlobalValue.UserDetails;
 import com.lms.lms.dto.request.ExamReq;
+import com.lms.lms.dto.request.ExamSubmitReq;
+import com.lms.lms.dto.request.QuestionSubmitReq;
 import com.lms.lms.dto.response.CustomCourseRes;
 import com.lms.lms.dto.response.Default;
 import com.lms.lms.dto.response.ExamRes;
 import com.lms.lms.mappers.ExamMapper;
 import com.lms.lms.modals.Exam;
 import com.lms.lms.modals.ExamAttempt;
+import com.lms.lms.modals.QuestionAttempt;
 import com.lms.lms.repo.*;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
@@ -32,6 +35,9 @@ public class ExamController {
 
     @Autowired
     private ExamRepo examRepo;
+
+    @Autowired
+    private QuestionAttemptRepo questionAttemptRepo;
 
     @Autowired
     private EnrollmentRepo enrollmentRepo;
@@ -215,10 +221,34 @@ public class ExamController {
         }
     }
 
-    @PutMapping("/markComplete/{examId}")
-    public ResponseEntity<Default> markCompleted(@PathVariable String examId){
+//    @PutMapping("/markComplete/{examId}")
+//    public ResponseEntity<Default> markCompleted(@PathVariable String examId){
+//        try{
+//            var examDetails = examRepo.findById(examId).orElse(null);
+//            if (examDetails == null) {
+//                return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
+//            }
+//            var user = userDetails.userDetails();
+//            if (user == null) {
+//                return ResponseEntity.badRequest().body(new Default("User Not Found", false, null, null));
+//            }
+//            var isExamAttempt = examAttemptRepo.findByUser_IdAndExam_Id(user.getId(), examId);
+//            if (isExamAttempt.isEmpty()) {
+//                return ResponseEntity.badRequest().body(new Default("User not attempt exam yet.", false, null, null));
+//            }
+//            examAttemptRepo.markExamCompete(examId, Boolean.TRUE);
+//            return ResponseEntity.ok().body(new Default("Exam Marked as Completed", false, null, null));
+//        }
+//        catch (Exception ex) {
+//            return ResponseEntity.internalServerError().body(new Default(ex.getMessage(), false, null, null));
+//        }
+//    }
+
+    @PutMapping("/submit")
+    @Transactional
+    public ResponseEntity<Default> submitExam(@Valid @RequestBody ExamSubmitReq examSubmitReq){
         try{
-            var examDetails = examRepo.findById(examId).orElse(null);
+            var examDetails = examRepo.findById(examSubmitReq.getExamId()).orElse(null);
             if (examDetails == null) {
                 return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
             }
@@ -226,12 +256,29 @@ public class ExamController {
             if (user == null) {
                 return ResponseEntity.badRequest().body(new Default("User Not Found", false, null, null));
             }
-            var isExamAttempt = examAttemptRepo.findByUser_IdAndExam_Id(user.getId(), examId);
+            var isExamAttempt = examAttemptRepo.findByUser_IdAndExam_Id(user.getId(), examSubmitReq.getExamId());
             if (isExamAttempt.isEmpty()) {
                 return ResponseEntity.badRequest().body(new Default("User not attempt exam yet.", false, null, null));
             }
-            examAttemptRepo.markExamCompete(examId, Boolean.TRUE);
-            return ResponseEntity.ok().body(new Default("Exam Marked as Completed", false, null, null));
+
+            ExamAttempt examAttempt = new ExamAttempt();
+            examAttempt.setExam(examDetails);
+            examAttempt.setUser(examDetails.getUser());
+            examAttempt.setIsAttempt(Boolean.TRUE);
+            examAttempt.setIsCompleted(Boolean.TRUE);
+            examAttemptRepo.save(examAttempt);
+
+            for (QuestionSubmitReq questionSubmitReq: examSubmitReq.getQuestions()){
+                var isQuestionExist = questionRepo.findById(questionSubmitReq.getQuestionId()).orElse(null);
+                if (isQuestionExist == null) {
+                    return ResponseEntity.badRequest().body(new Default("Invalid Question Id", false, null, null));
+                }
+                QuestionAttempt questionAttempt = new QuestionAttempt();
+                questionAttempt.setQuestions(isQuestionExist);
+                questionAttempt.setAnswer(questionSubmitReq.getAnswer());
+                questionAttemptRepo.save(questionAttempt);
+            }
+            return ResponseEntity.ok().body(new Default("Exam Submitted Successfully", true, null, null));
         }
         catch (Exception ex) {
             return ResponseEntity.internalServerError().body(new Default(ex.getMessage(), false, null, null));
