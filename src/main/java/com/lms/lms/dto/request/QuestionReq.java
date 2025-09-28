@@ -21,6 +21,8 @@ public class QuestionReq {
     @NotNull(message = "Title is required")
     private String title;
 
+    private Boolean correctOption;
+
     private Integer position;
     @NotNull(message = "Description is required")
     private String description;

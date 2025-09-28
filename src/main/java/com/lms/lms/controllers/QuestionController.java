@@ -73,6 +73,7 @@ public class QuestionController {
             questions.setTitle(questionReq.getTitle());
             questions.setDescription(questionReq.getDescription());
             questions.setExam(ExamDetails);
+            questions.setCorrectOption(questionReq.getCorrectOption() || Boolean.FALSE);
             questionRepo.save(questions);
 
             if(questionReq.getType() == Questions.Type.MCQ){
