@@ -1,6 +1,7 @@
 package com.lms.lms.config;
 
 import com.lms.lms.dto.response.ErrorRes;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -63,6 +64,22 @@ public class GlobalExceptionHandler {
         );
 
         return new ResponseEntity<>(errorRes, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorRes> handleDataIntegrity(DataIntegrityViolationException ex) {
+//        Map<String, Object> error = new HashMap<>();
+//        error.put("error", "Database Error");
+//        error.put("message", "Invalid data: " + ex.getMostSpecificCause().getMessage());
+
+        ErrorRes errorRes = new ErrorRes(
+                ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")),
+                HttpStatus.BAD_REQUEST.value(),
+                "Database Error",
+                ex.getMostSpecificCause().getMessage()
+        );
+
+        return new ResponseEntity<>(errorRes, HttpStatus.BAD_REQUEST);
     }
 
 
