@@ -55,6 +55,8 @@ public class Questions {
     @UpdateTimestamp
     private Date updatedAt = new Date();
 
+    private Boolean correctOption = Boolean.FALSE;
+
     @OneToMany(mappedBy = "questions", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<QuestionOptions> options = new ArrayList<>();
 
