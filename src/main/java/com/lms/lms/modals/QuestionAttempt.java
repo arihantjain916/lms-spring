@@ -28,6 +28,14 @@ public class QuestionAttempt {
     @JoinColumn(name = "question_id", nullable = false)
     private Questions questions;
 
+    @ManyToOne
+    @JoinColumn(name = "exam_id", nullable = false)
+    private Exam exam;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
     @Column(nullable = false, updatable = false)
     @CreationTimestamp
     private Date attemptedAt = new Date();
