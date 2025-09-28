@@ -7,10 +7,9 @@ import com.lms.lms.dto.request.QuestionSubmitReq;
 import com.lms.lms.dto.response.CustomCourseRes;
 import com.lms.lms.dto.response.Default;
 import com.lms.lms.dto.response.ExamRes;
+import com.lms.lms.dto.response.ReportCardRes;
 import com.lms.lms.mappers.ExamMapper;
-import com.lms.lms.modals.Exam;
-import com.lms.lms.modals.ExamAttempt;
-import com.lms.lms.modals.QuestionAttempt;
+import com.lms.lms.modals.*;
 import com.lms.lms.repo.*;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
@@ -20,6 +19,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -41,6 +42,9 @@ public class ExamController {
 
     @Autowired
     private EnrollmentRepo enrollmentRepo;
+
+    @Autowired
+    private ReportCardRepo reportCardRepo;
 
     @Autowired
     private UserDetails userDetails;
@@ -214,7 +218,7 @@ public class ExamController {
 
             examAttemptRepo.save(examAttempt);
 
-            return ResponseEntity.ok().body(new Default("Exam Attempted Successfully", false, null, null));
+            return ResponseEntity.ok().body(new Default("Exam Attempted Successfully", true, null, null));
         }
         catch (Exception ex) {
             return ResponseEntity.internalServerError().body(new Default(ex.getMessage(), false, null, null));
@@ -261,12 +265,7 @@ public class ExamController {
                 return ResponseEntity.badRequest().body(new Default("User not attempt exam yet.", false, null, null));
             }
 
-            ExamAttempt examAttempt = new ExamAttempt();
-            examAttempt.setExam(examDetails);
-            examAttempt.setUser(examDetails.getUser());
-            examAttempt.setIsAttempt(Boolean.TRUE);
-            examAttempt.setIsCompleted(Boolean.TRUE);
-            examAttemptRepo.save(examAttempt);
+            examAttemptRepo.markExamCompete(examSubmitReq.getExamId(), Boolean.TRUE);
 
             for (QuestionSubmitReq questionSubmitReq: examSubmitReq.getQuestions()){
                 var isQuestionExist = questionRepo.findById(questionSubmitReq.getQuestionId()).orElse(null);
@@ -276,8 +275,19 @@ public class ExamController {
                 QuestionAttempt questionAttempt = new QuestionAttempt();
                 questionAttempt.setQuestions(isQuestionExist);
                 questionAttempt.setAnswer(questionSubmitReq.getAnswer());
+                questionAttempt.setExam(examDetails);
+                questionAttempt.setUser(user);
                 questionAttemptRepo.save(questionAttempt);
             }
+
+            if(examDetails.isShowScoreImmediately()){
+                Boolean isGenerated = generateReportCard(examDetails,user);
+                System.out.println("generateReportCard: "+isGenerated);
+                if(!isGenerated){
+                    return ResponseEntity.badRequest().body(new Default("Error in generating report card. Contact Support.", false, null, null));
+                }
+            }
+
             return ResponseEntity.ok().body(new Default("Exam Submitted Successfully", true, null, null));
         }
         catch (Exception ex) {
@@ -297,4 +307,88 @@ public class ExamController {
             return null;
         }
     }
+
+    public Boolean generateReportCard(Exam exam, User user) {
+        try {
+            ReportCard isReportCardGenerated = reportCardRepo.findByUser_IdAndExam_Id(user.getId(), exam.getId());
+            if (isReportCardGenerated != null) {
+                return Boolean.FALSE;
+            }
+            List<QuestionAttempt> attempts =
+                    questionAttemptRepo.findByUser_IdAndExam_Id(user.getId(), exam.getId());
+
+            BigDecimal totalMarks = BigDecimal.ZERO;
+            BigDecimal obtainedMarks = BigDecimal.ZERO;
+            String grade = "";
+
+            BigDecimal percentage = BigDecimal.ZERO;
+
+            for (QuestionAttempt attempt : attempts) {
+                Questions question = attempt.getQuestions();
+                if (question == null) continue;
+
+                totalMarks = totalMarks.add(question.getMarks());
+
+                if (question.getType() == Questions.Type.MCQ) {
+                    String correctOptionId = question.getOptions().stream()
+                            .filter(opt -> Boolean.TRUE.equals(opt.getIsCorrect()))
+                            .map(QuestionOptions::getId)
+                            .findFirst()
+                            .orElse(null);
+
+                    if(correctOptionId == null) {
+                        continue;
+                    }
+
+                    boolean isCorrect = correctOptionId.equals(attempt.getAnswer());
+
+                    if (isCorrect) {
+                        obtainedMarks = obtainedMarks.add(question.getMarks());
+                    }
+                }
+                if (question.getType() == Questions.Type.TRUE_FALSE) {
+                    boolean isCorrect = Boolean.parseBoolean(attempt.getAnswer()) == Boolean.TRUE.equals(question.getCorrectOption());
+
+                    if (isCorrect) {
+                        obtainedMarks = obtainedMarks.add(question.getMarks());
+                    }
+                }
+
+                 percentage = totalMarks.compareTo(BigDecimal.ZERO) > 0
+                        ? obtainedMarks.multiply(BigDecimal.valueOf(100)).divide(totalMarks, 2, RoundingMode.HALF_UP)
+                        : BigDecimal.ZERO;
+
+                grade = calculateGrade(percentage);
+            }
+
+            ReportCard reportCard = new ReportCard();
+            reportCard.setTotalMarks(totalMarks);
+            reportCard.setObtainedMarks(obtainedMarks);
+            reportCard.setPercentage(percentage);
+            reportCard.setGrade(grade);
+            reportCard.setExam(exam);
+            reportCard.setUser(user);
+            reportCardRepo.save(reportCard);
+
+            return Boolean.TRUE;
+
+        } catch (Exception e) {
+            System.out.println("exception: "+ e.getMessage());
+            return Boolean.FALSE;
+        }
+    }
+
+    private String calculateGrade(BigDecimal percentage) {
+        if (percentage == null) return "N/A";
+
+        double pct = percentage.doubleValue();
+
+        if (pct >= 90) return "A+";
+        if (pct >= 80) return "A";
+        if (pct >= 70) return "B";
+        if (pct >= 60) return "C";
+        if (pct >= 50) return "D";
+        return "F";
+    }
+
 }
