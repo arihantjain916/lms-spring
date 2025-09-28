@@ -89,8 +89,8 @@ Install my-project with npm
 - [x] Admin Category Management  
 - [x] Blog & Comment System  
 - [x] Course Stats  
-- [ ] Exams & Quizzes (in progress)  
-- [ ] Certificates  
+- [x] Exams & Quizzes 
+- [ ] Certificates  (in progress)
 - [ ] Gamification  
 - [ ] Notifications & Messaging  
 
