@@ -8,6 +8,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.util.ArrayList;
 import java.util.Date;
 
 @Entity
@@ -30,6 +31,8 @@ public class ExamAttempt {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    private ArrayList<QuestionAttempt> questionAttempts;
 
     @Column(nullable = false, updatable = false)
     @CreationTimestamp
