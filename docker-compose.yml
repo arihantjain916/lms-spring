@@ -1,0 +1,47 @@
+#version: "3.9"
+#
+#services:
+#  db:
+#    image: postgres:16
+#    container_name: postgres_db
+#    restart: always
+#    environment:
+#      POSTGRES_USER: arihant
+#      POSTGRES_PASSWORD: arihant
+#      POSTGRES_DB: lms
+#    ports:
+#      - "5432:5432"
+#    volumes:
+#      - postgres_data:/var/lib/postgresql/data
+#
+#volumes:
+#  postgres_data:
+
+
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: arihant
+      POSTGRES_PASSWORD: arihant
+      POSTGRES_DB: lms
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    depends_on:
+      - db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lms
+      SPRING_DATASOURCE_USERNAME: arihant
+      SPRING_DATASOURCE_PASSWORD: arihant
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres_data:
