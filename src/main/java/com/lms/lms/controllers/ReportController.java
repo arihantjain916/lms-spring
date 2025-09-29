@@ -5,6 +5,7 @@ import com.lms.lms.dto.request.ReportCardReq;
 import com.lms.lms.dto.response.Default;
 import com.lms.lms.dto.response.ReportCardRes;
 import com.lms.lms.modals.ReportCard;
+import com.lms.lms.repo.EnrollmentRepo;
 import com.lms.lms.repo.ExamRepo;
 import com.lms.lms.repo.ReportCardRepo;
 import jakarta.validation.Valid;
@@ -25,6 +26,10 @@ public class ReportController {
 
     @Autowired
     private ExamRepo examRepo;
+
+
+    @Autowired
+    private EnrollmentRepo enrollmentRepo;
 
     @GetMapping("/{examId}/get")
     public ResponseEntity<Default> getReportCard(@PathVariable String examId) {
@@ -59,6 +64,13 @@ public class ReportController {
             var examDetails = examRepo.findById(reportCardReq.getExamId()).orElse(null);
             if (examDetails == null) {
                 return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
+            }
+
+
+            var isUserEnrolled = enrollmentRepo.existsByUser_IdAndCourses_Id(user.getId(), examDetails.getCourses().getId());
+
+            if (!isUserEnrolled) {
+                return ResponseEntity.badRequest().body(new Default("User is not enrolled in the course", false, null, null));
             }
 
             ReportCard isReportCardGenerated = reportCardRepo.findByUser_IdAndExam_Id(user.getId(), reportCardReq.getExamId());
