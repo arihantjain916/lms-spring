@@ -66,7 +66,6 @@ public class ReportController {
                 return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
             }
 
-
             var isUserEnrolled = enrollmentRepo.existsByUser_IdAndCourses_Id(user.getId(), examDetails.getCourses().getId());
 
             if (!isUserEnrolled) {
@@ -88,6 +87,34 @@ public class ReportController {
             reportCard.setTotalMarks(reportCardReq.getTotalMarks());
             reportCardRepo.save(reportCard);
             return ResponseEntity.ok().body(new Default("Report Card Generated Successfully", true, null, null));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN','INSTRUCTOR')")
+    @PutMapping("/update")
+    public ResponseEntity<Default> update(@Valid @RequestBody ReportCardReq reportCardReq) {
+        try {
+            var user = userDetails.userDetails();
+
+            var examDetails = examRepo.findById(reportCardReq.getExamId()).orElse(null);
+            if (examDetails == null) {
+                return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
+            }
+
+            ReportCard isReportCardGenerated = reportCardRepo.findByUser_IdAndExam_Id(user.getId(), reportCardReq.getExamId());
+
+            if (isReportCardGenerated == null) {
+                return ResponseEntity.badRequest().body(new Default("Report Card Not Found.", false, null, null));
+            }
+
+            isReportCardGenerated.setPercentage(reportCardReq.getPercentage());
+            isReportCardGenerated.setGrade(reportCardReq.getGrade());
+            isReportCardGenerated.setObtainedMarks(reportCardReq.getObtainedMarks());
+            isReportCardGenerated.setTotalMarks(reportCardReq.getTotalMarks());
+            reportCardRepo.save(isReportCardGenerated);
+            return ResponseEntity.ok().body(new Default("Report Card Updated Successfully", true, null, null));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
