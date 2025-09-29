@@ -139,6 +139,7 @@ public class ReportController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','INSTRUCTOR')")
     @GetMapping("/exam/{examId}")
     public ResponseEntity<Default> getReportByCourse(@PathVariable String examId) {
         try {
