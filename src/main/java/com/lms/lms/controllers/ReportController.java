@@ -37,6 +37,7 @@ public class ReportController {
     @Autowired
     private ReportMapper reportMapper;
 
+
     @GetMapping("/{examId}/get")
     public ResponseEntity<Default> getReportCard(@PathVariable String examId) {
         try {
@@ -131,6 +132,18 @@ public class ReportController {
         try {
             var user = userDetails.userDetails();
             List<ReportCardRes> reportCard = reportCardRepo.findByUser_Id(user.getId()).stream().map(reportMapper::toDto).toList();
+
+            return ResponseEntity.ok().body(new Default("Report Card Fetched Successfully", true, null, reportCard));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    @GetMapping("/exam/{examId}")
+    public ResponseEntity<Default> getReportByCourse(@PathVariable String examId) {
+        try {
+
+            List<ReportCardRes> reportCard = reportCardRepo.findByExam_Id(examId).stream().map(reportMapper::toDto).toList();
 
             return ResponseEntity.ok().body(new Default("Report Card Fetched Successfully", true, null, reportCard));
         } catch (Exception e) {

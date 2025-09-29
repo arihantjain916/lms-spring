@@ -9,4 +9,6 @@ public interface ReportCardRepo extends JpaRepository<ReportCard, String> {
     ReportCard findByUser_IdAndExam_Id(String userId, String examId);
 
     List<ReportCard> findByUser_Id(String userId);
+
+    List<ReportCard> findByExam_Id(String userId);
 }
