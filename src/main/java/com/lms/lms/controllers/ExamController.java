@@ -7,14 +7,12 @@ import com.lms.lms.dto.request.QuestionSubmitReq;
 import com.lms.lms.dto.response.CustomCourseRes;
 import com.lms.lms.dto.response.Default;
 import com.lms.lms.dto.response.ExamRes;
-import com.lms.lms.dto.response.ReportCardRes;
 import com.lms.lms.mappers.ExamMapper;
 import com.lms.lms.modals.*;
 import com.lms.lms.repo.*;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -269,31 +267,6 @@ public class ExamController {
         }
         catch (Exception ex) {
             return ResponseEntity.internalServerError().body(new Default(ex.getMessage(), false, null, null));
-        }
-    }
-
-    @GetMapping("{examId}/reportCard")
-    public ResponseEntity<Default> getReportCard(@PathVariable String examId){
-        try{
-            var user = userDetails.userDetails();
-            var examDetails = examRepo.findById(examId).orElse(null);
-            if (examDetails == null) {
-                return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
-            }
-            ReportCard reportCard = reportCardRepo.findByUser_IdAndExam_Id(user.getId(), examId);
-            if(reportCard == null){
-                return ResponseEntity.badRequest().body(new Default("Report Card Not Generated Yet", false, null, null));
-            }
-            ReportCardRes res = new ReportCardRes(
-                    reportCard.getId(),
-                    reportCard.getTotalMarks(),
-                    reportCard.getObtainedMarks(),
-                    reportCard.getPercentage(),
-                    reportCard.getGrade()
-            );
-            return ResponseEntity.ok().body(new Default("Report Card Generated Successfully", true, null, res));
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
     }
 
