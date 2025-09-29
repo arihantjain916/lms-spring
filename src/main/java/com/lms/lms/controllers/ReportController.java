@@ -4,6 +4,7 @@ import com.lms.lms.GlobalValue.UserDetails;
 import com.lms.lms.dto.request.ReportCardReq;
 import com.lms.lms.dto.response.Default;
 import com.lms.lms.dto.response.ReportCardRes;
+import com.lms.lms.mappers.ReportMapper;
 import com.lms.lms.modals.ReportCard;
 import com.lms.lms.repo.EnrollmentRepo;
 import com.lms.lms.repo.ExamRepo;
@@ -13,6 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/report")
@@ -30,6 +33,9 @@ public class ReportController {
 
     @Autowired
     private EnrollmentRepo enrollmentRepo;
+
+    @Autowired
+    private ReportMapper reportMapper;
 
     @GetMapping("/{examId}/get")
     public ResponseEntity<Default> getReportCard(@PathVariable String examId) {
@@ -115,6 +121,18 @@ public class ReportController {
             isReportCardGenerated.setTotalMarks(reportCardReq.getTotalMarks());
             reportCardRepo.save(isReportCardGenerated);
             return ResponseEntity.ok().body(new Default("Report Card Updated Successfully", true, null, null));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<Default> getUserReport() {
+        try {
+            var user = userDetails.userDetails();
+            List<ReportCardRes> reportCard = reportCardRepo.findByUser_Id(user.getId()).stream().map(reportMapper::toDto).toList();
+
+            return ResponseEntity.ok().body(new Default("Report Card Fetched Successfully", true, null, reportCard));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
