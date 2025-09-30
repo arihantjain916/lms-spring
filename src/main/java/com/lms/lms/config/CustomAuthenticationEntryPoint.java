@@ -29,8 +29,8 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
         HashMap<String, Object> body = new HashMap<>();
         body.put("timestamp", date);
         body.put("status", HttpServletResponse.SC_UNAUTHORIZED);
-        body.put("error", "Access Denied");
-        body.put("message", "You are not authorized to access this resource.");
+        body.put("error", "Unauthorized");
+        body.put("message", "You are not authorized to access this resource. Please log in with valid credentials.");
         response.getWriter().write(objectMapper.writeValueAsString(body));
     }
 }
