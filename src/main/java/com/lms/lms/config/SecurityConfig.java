@@ -44,6 +44,9 @@ public class SecurityConfig {
     private CustomAccessDeniedHandler customAccessDeniedHandler;
 
     @Autowired
+    private CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+
+    @Autowired
     private PublicRoutes publicRoutes;
 
     @Bean
@@ -64,7 +67,13 @@ public class SecurityConfig {
 //                        .requestMatchers(HttpMethod.GET, "/blog").permitAll()
                         .requestMatchers(HttpMethod.GET, publicRoutes.getPublicRoutes()).permitAll()
                         .anyRequest().authenticated())
-                .exceptionHandling(ex -> ex.accessDeniedHandler(customAccessDeniedHandler))
+                .exceptionHandling(ex ->
+
+                        ex.accessDeniedHandler(customAccessDeniedHandler)
+                                .authenticationEntryPoint(customAuthenticationEntryPoint)
+
+
+                )
 //                .exceptionHandling(ex -> ex
 //                        .accessDeniedHandler((req, res, e) -> {
 //                            globalExceptionHandler.handleException(
