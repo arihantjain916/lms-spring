@@ -20,10 +20,10 @@ public class JwtService {
 
     public String generateToken(String id){
 
-        String encryptedId = encryptionService.encrypt(id);
+//        String encryptedId = encryptionService.encrypt(id);   //uncomment in production
         return Jwts
                 .builder()
-                .claim("id", encryptedId)
+                .claim("id", id)
                 .subject("user")
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
@@ -41,9 +41,9 @@ public class JwtService {
         return claimsResolver.apply(claims);
     }
     public String extractUsername(String token) {
-        String id = extractClaim(token, claims -> claims.get("id", String.class));
-        return encryptionService.decrypt(id);
-//        return extractClaim(token, claims -> claims.get("id", String.class));
+//        String id = extractClaim(token, claims -> claims.get("id", String.class));
+//        return encryptionService.decrypt(id);  //uncomment in production
+        return extractClaim(token, claims -> claims.get("id", String.class));
     }
 
     public boolean validateToken(String token, UserDetails userDetails) {
