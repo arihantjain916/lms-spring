@@ -2,26 +2,28 @@ package com.lms.lms.service;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
-import java.util.Base64;
 import java.util.Date;
 import java.util.function.Function;
-
-import io.jsonwebtoken.security.Keys;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 
 @Service
 public class JwtService {
     private String key = "jkbcidbc!@#$%^&1541AFVGYVASDFGHJKL@#$%";
 
+    @Autowired
+    private EncryptionService encryptionService;
+
     public String generateToken(String id){
 
+        String encryptedId = encryptionService.encrypt(id);
         return Jwts
                 .builder()
-                .claim("id", id)
+                .claim("id", encryptedId)
                 .subject("user")
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
@@ -39,7 +41,9 @@ public class JwtService {
         return claimsResolver.apply(claims);
     }
     public String extractUsername(String token) {
-        return extractClaim(token, claims -> claims.get("id", String.class));
+        String id = extractClaim(token, claims -> claims.get("id", String.class));
+        return encryptionService.decrypt(id);
+//        return extractClaim(token, claims -> claims.get("id", String.class));
     }
 
     public boolean validateToken(String token, UserDetails userDetails) {
