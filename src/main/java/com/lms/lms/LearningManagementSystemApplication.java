@@ -32,4 +32,19 @@ public class LearningManagementSystemApplication {
         return ResponseEntity.ok(new Default("Application is running", true, date, null));
     }
 
+//    to return html file
+//    @GetMapping("/")
+//    public ResponseEntity<Resource> test() throws InaccessibleObjectException {
+//        Resource resource = new ClassPathResource("static/index.html");
+//        return ResponseEntity.ok()
+//                .contentType(MediaType.TEXT_HTML)
+//                .body(resource);
+//    }
+
+    @GetMapping("/")
+    public ResponseEntity<Default> index() {
+        ZonedDateTime istTime = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+        var date = istTime.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss"));
+        return ResponseEntity.ok(new Default("Welcome to Learning Management System. Created By Arihant Jain", true, date, null));
+    }
 }
