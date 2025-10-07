@@ -9,4 +9,5 @@ public class LoginRes {
     private String message;
     private Boolean status;
     private String token;
+    private String refreshToken;
 }

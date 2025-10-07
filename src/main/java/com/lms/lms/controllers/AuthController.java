@@ -33,6 +33,9 @@ public class AuthController {
     @Autowired
     private AuthenticationManager authenticationManager;
 
+    @Autowired
+    private RefreshTokenController refreshTokenController;
+
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
 
     @PostMapping("/register")
@@ -72,7 +75,8 @@ public class AuthController {
 
             if (auth.isAuthenticated()){
                 var token = jwtService.generateToken(isUserExist.getId());
-                return ResponseEntity.ok(new LoginRes("User Login Successfully", true, token));
+                var refreshToken = refreshTokenController.createRefreshToken(isUserExist);
+                return ResponseEntity.ok(new LoginRes("User Login Successfully", true, token, refreshToken));
             }
             return new ResponseEntity<>(new Default("Invalid Credentials", false, null, null), HttpStatus.UNAUTHORIZED);
         }
