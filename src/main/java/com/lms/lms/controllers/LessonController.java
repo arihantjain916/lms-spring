@@ -8,6 +8,7 @@ import com.lms.lms.mappers.LessonMapper;
 import com.lms.lms.modals.Lesson;
 import com.lms.lms.repo.CoursesRepo;
 import com.lms.lms.repo.LessonRepo;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -15,6 +16,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -69,12 +71,13 @@ public class LessonController {
                     lessons.getTotalPages()
             );
 
-            return ResponseEntity.internalServerError().body(paginatedResponse);
+            return ResponseEntity.ok().body(paginatedResponse);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','INSTRUCTOR')")
     @PostMapping("/add")
     public ResponseEntity<Default> addLesson(@Valid @RequestBody LessonReq lessonReq) {
         try {
@@ -93,13 +96,15 @@ public class LessonController {
             lesson.setCourses(course);
 
             lessonRepo.save(lesson);
-            return ResponseEntity.internalServerError().body(new Default("Lesson Added Successfully", true, null, null));
+            return ResponseEntity.ok().body(new Default("Lesson Added Successfully", true, null, null));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','INSTRUCTOR')")
     @PutMapping("/update")
+    @Transactional
     public ResponseEntity<Default> updateLesson(@Valid @RequestBody LessonReq lessonReq) {
         try {
             if (lessonReq.getId().isBlank()) {
@@ -124,7 +129,23 @@ public class LessonController {
             lesson.setCourses(course);
 
             lessonRepo.save(lesson);
-            return ResponseEntity.internalServerError().body(new Default("Lesson Updated Successfully", true, null, null));
+            return ResponseEntity.ok().body(new Default("Lesson Updated Successfully", true, null, null));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN','INSTRUCTOR')")
+    @DeleteMapping("/delete/{lessonId}")
+    @Transactional
+    public ResponseEntity<Default> deleteLesson(@PathVariable String lessonId) {
+        try {
+            var lesson = lessonRepo.findById(lessonId).orElse(null);
+            if (lesson == null) {
+                return ResponseEntity.internalServerError().body(new Default("Lesson Not Found", false, null, null));
+            }
+            lessonRepo.delete(lesson);
+            return ResponseEntity.ok().body(new Default("Lesson Deleted Successfully", true, null, null));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
