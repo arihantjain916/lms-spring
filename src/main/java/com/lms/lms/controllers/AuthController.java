@@ -73,6 +73,23 @@ public class AuthController {
                 return new ResponseEntity<>(new Default("User Does Not Exists", false, null, null), HttpStatus.BAD_REQUEST);
             }
 
+            if (!isUserExist.getIsActive()) {
+                return new ResponseEntity<>(new Default("User Is Not Active", false, null, null), HttpStatus.BAD_REQUEST);
+            }
+
+            if (isUserExist.getIsBanned()) {
+                return new ResponseEntity<>(new Default("User Is Banned", false, null, null), HttpStatus.BAD_REQUEST);
+            }
+
+            if (isUserExist.getIsDeleted()) {
+                return new ResponseEntity<>(new Default("User Does Not Exists", false, null, null), HttpStatus.BAD_REQUEST);
+            }
+
+            if (!isUserExist.getIsVerified()) {
+                return new ResponseEntity<>(new Default("User Is Not Verified", false, null, null), HttpStatus.BAD_REQUEST);
+            }
+
+
             Authentication auth = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(login.getUsername(), login.getPassword()));
 
             if (auth.isAuthenticated()){
