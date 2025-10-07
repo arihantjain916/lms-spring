@@ -6,7 +6,6 @@ import com.lms.lms.modals.User;
 import com.lms.lms.repo.RefreshTokenRepo;
 import com.lms.lms.service.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,7 +29,8 @@ public class RefreshTokenController {
     @GetMapping("/{token}")
     public ResponseEntity<Default> generateToken(@PathVariable String token) {
         try {
-            var Token = refreshTokenRepo.findByTokenOrderByCreatedAtDesc(token, Pageable.ofSize(1));
+            var Token = refreshTokenRepo.findByTokenOrderByCreatedAtDesc(token);
+            System.out.println("Token: " + Token);
             if (Token == null) {
                 return ResponseEntity.badRequest().body(new Default("Invalid Token", false, null, null));
             }
@@ -53,5 +53,14 @@ public class RefreshTokenController {
         token.setToken(UUID.randomUUID().toString());
         refreshTokenRepo.save(token);
         return token.getToken();
+    }
+
+    public Boolean deleteRefreshToken(User user) {
+        try {
+            int cont = refreshTokenRepo.deleteByUser(user);
+            return cont > 0;
+        } catch (Exception e) {
+            return Boolean.FALSE;
+        }
     }
 }

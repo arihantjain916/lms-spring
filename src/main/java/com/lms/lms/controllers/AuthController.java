@@ -1,6 +1,7 @@
 package com.lms.lms.controllers;
 
 
+import com.lms.lms.GlobalValue.UserDetails;
 import com.lms.lms.dto.request.Login;
 import com.lms.lms.dto.request.Register;
 import com.lms.lms.dto.response.Default;
@@ -16,10 +17,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
@@ -35,6 +33,9 @@ public class AuthController {
 
     @Autowired
     private RefreshTokenController refreshTokenController;
+
+    @Autowired
+    private UserDetails userDetails;
 
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
 
@@ -81,6 +82,19 @@ public class AuthController {
             return new ResponseEntity<>(new Default("Invalid Credentials", false, null, null), HttpStatus.UNAUTHORIZED);
         }
         catch (Exception e){
+            return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/logout")
+    public ResponseEntity<Default> logout() {
+        try {
+            Boolean isDelete = refreshTokenController.deleteRefreshToken(userDetails.userDetails());
+            if (isDelete) {
+                return new ResponseEntity<>(new Default("User Logout Successfully", true, null, null), HttpStatus.OK);
+            }
+            return new ResponseEntity<>(new Default("User Logout Failed", false, null, null), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
             return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
