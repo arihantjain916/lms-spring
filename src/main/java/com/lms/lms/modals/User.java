@@ -50,6 +50,14 @@ public class User {
     @OneToMany(mappedBy = "user")
     private List<Asset> assets;
 
+    Boolean isVerified = false;
+
+    Boolean isBanned = false;
+
+    Boolean isDeleted = false;
+
+    Boolean isActive = true;
+
     public enum Role {
         STUDENT,
         INSTRUCTOR,
