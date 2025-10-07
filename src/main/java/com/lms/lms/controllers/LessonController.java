@@ -98,4 +98,35 @@ public class LessonController {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
     }
+
+    @PutMapping("/update")
+    public ResponseEntity<Default> updateLesson(@Valid @RequestBody LessonReq lessonReq) {
+        try {
+            if (lessonReq.getId().isBlank()) {
+                return ResponseEntity.internalServerError().body(new Default("Lesson Id is required", false, null, null));
+            }
+            var lesson = lessonRepo.findById(lessonReq.getId()).orElse(null);
+            if (lesson == null) {
+                return ResponseEntity.internalServerError().body(new Default("Lesson Not Found", false, null, null));
+            }
+
+            var course = coursesRepo.findById(lessonReq.getCourseId()).orElse(null);
+            if (course == null) {
+                return ResponseEntity.internalServerError().body(new Default("Course Not Found", false, null, null));
+            }
+
+            lesson.setDescription(lessonReq.getDescription());
+            lesson.setTitle(lessonReq.getTitle());
+            lesson.setVideoUrl(lessonReq.getVideoUrl());
+            lesson.setTime(lessonReq.getTime());
+            lesson.setThumbnailUrl(lessonReq.getThumbnailUrl());
+            lesson.setStatus(lessonReq.getStatus());
+            lesson.setCourses(course);
+
+            lessonRepo.save(lesson);
+            return ResponseEntity.internalServerError().body(new Default("Lesson Updated Successfully", true, null, null));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
 }
