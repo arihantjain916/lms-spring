@@ -61,18 +61,22 @@ It enables instructors to manage courses, admins to handle categories, and suppo
 
 ## 🛠️ Installation
 
-Install my-project with npm
+Install lms-spring
 
 ```bash
     git clone https://github.com/arihantjain916/lms-spring
     cd lms-spring
 ```
-```bash
-    npm install
-```
-```bash
-    npm run dev
-```
+
+## 🧩 Prerequisites
+
+Make sure you have the following installed:
+
+- Java 24
+
+- Maven
+
+- PSQL
 
 ## 📖 Usage
 
