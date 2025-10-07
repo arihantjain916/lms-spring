@@ -1,5 +1,6 @@
 package com.lms.lms.controllers;
 
+import com.lms.lms.dto.request.LessonReq;
 import com.lms.lms.dto.response.Default;
 import com.lms.lms.dto.response.LessonRes;
 import com.lms.lms.dto.response.PaginatedResponse;
@@ -7,6 +8,7 @@ import com.lms.lms.mappers.LessonMapper;
 import com.lms.lms.modals.Lesson;
 import com.lms.lms.repo.CoursesRepo;
 import com.lms.lms.repo.LessonRepo;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -68,6 +70,30 @@ public class LessonController {
             );
 
             return ResponseEntity.internalServerError().body(paginatedResponse);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    @PostMapping("/add")
+    public ResponseEntity<Default> addLesson(@Valid @RequestBody LessonReq lessonReq) {
+        try {
+            var course = coursesRepo.findById(lessonReq.getCourseId()).orElse(null);
+            if (course == null) {
+                return ResponseEntity.internalServerError().body(new Default("Course Not Found", false, null, null));
+            }
+
+            Lesson lesson = new Lesson();
+            lesson.setTime(lessonReq.getTime());
+            lesson.setDescription(lessonReq.getDescription());
+            lesson.setTitle(lessonReq.getTitle());
+            lesson.setVideoUrl(lessonReq.getVideoUrl());
+            lesson.setThumbnailUrl(lessonReq.getThumbnailUrl());
+            lesson.setStatus(lessonReq.getStatus());
+            lesson.setCourses(course);
+
+            lessonRepo.save(lesson);
+            return ResponseEntity.internalServerError().body(new Default("Lesson Added Successfully", true, null, null));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
