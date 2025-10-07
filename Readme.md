@@ -67,12 +67,16 @@ Install my-project with npm
     git clone https://github.com/arihantjain916/lms-spring
     cd lms-spring
 ```
-```bash
-    npm install
-```
-```bash
-    npm run dev
-```
+
+## 🧩 Prerequisites
+
+Make sure you have the following installed:
+
+- Java 24
+
+- Maven
+
+- PSQL
 
 ## 📖 Usage
 
