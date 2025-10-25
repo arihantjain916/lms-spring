@@ -106,18 +106,17 @@ This project is licensed under the MIT License.
 
 To publish and run the project using Docker:
 
-1. **Configure Database**
-    - Open `src/main/resources/application.properties`
-    - Uncomment and update the `spring.datasource.url` (or `database-url`) property with your database connection
-      string.
-
-2. **Build the Project**
+1. **Build the Project**
 
 ```bash
    mvn clean package -Dmaven.test.skip=true
 ```
+3. **Build Docker Image**
 
-3. **Start Docker Container**
+```bash
+  docker-compose build
+```
+4. **Start Docker Container**
 
 ```bash
    docker-compose up -d
