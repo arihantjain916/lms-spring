@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +14,8 @@ import java.util.function.Function;
 
 @Service
 public class JwtService {
-    private String key = "jkbcidbc!@#$%^&1541AFVGYVASDFGHJKL@#$%";
+    @Value("${spring.jwt.key}")
+    private String key;
 
     @Autowired
     private EncryptionService encryptionService;

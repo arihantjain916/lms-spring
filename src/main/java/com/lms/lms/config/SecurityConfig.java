@@ -58,8 +58,8 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors->cors.configurationSource(corsConfigurationSource()))
-                .authorizeHttpRequests(req->req
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .authorizeHttpRequests(req -> req
                         .requestMatchers("/auth/**", "/health", "/test", "/contact/**", "/upload/**", "/").permitAll()
 //                        .requestMatchers(HttpMethod.GET, "/course/**").permitAll()
 //                        .requestMatchers(HttpMethod.GET, "/category/**").permitAll()

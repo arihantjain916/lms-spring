@@ -1,8 +1,8 @@
 package com.lms.lms.dto.request;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import jakarta.validation.constraints.NotBlank;
 
 @Data
 @AllArgsConstructor

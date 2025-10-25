@@ -9,7 +9,7 @@ import java.util.Optional;
 
 public interface CategoryRepo extends JpaRepository<Category, String> {
     Optional<Category> findBySlug(String slug);
-    
+
     @Query("SELECT c, COUNT(co) FROM Category c LEFT JOIN c.courses co GROUP BY c")
     List<Object[]> findCategoryCourseCounts();
 }

@@ -6,7 +6,7 @@ import lombok.Getter;
 @AllArgsConstructor
 @Getter
 
-public class CustomCategoryRes{
+public class CustomCategoryRes {
     private String id;
     private String name;
 }

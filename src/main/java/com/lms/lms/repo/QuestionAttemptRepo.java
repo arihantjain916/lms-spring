@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface QuestionAttemptRepo extends JpaRepository<QuestionAttempt,String> {
+public interface QuestionAttemptRepo extends JpaRepository<QuestionAttempt, String> {
 
     List<QuestionAttempt> findByUser_IdAndExam_Id(String userId, String examId);
 }
