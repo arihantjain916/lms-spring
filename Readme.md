@@ -116,8 +116,12 @@ To publish and run the project using Docker:
 ```bash
    mvn clean package -Dmaven.test.skip=true
 ```
+3. **Build Docker Image**
 
-3. **Start Docker Container**
+```bash
+  docker-compose build
+```
+4. **Start Docker Container**
 
 ```bash
    docker-compose up -d
