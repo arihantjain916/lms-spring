@@ -9,6 +9,8 @@ import com.lms.lms.dto.response.LoginRes;
 import com.lms.lms.modals.User;
 import com.lms.lms.repo.UserRepo;
 import com.lms.lms.service.JwtService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -65,7 +67,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> register(@Valid @RequestBody Login login){
+    public ResponseEntity<?> register(@Valid @RequestBody Login login, HttpServletResponse response){
         try{
             User isUserExist = userRepo.findByUsername(login.getUsername()).orElse(null);
 
@@ -95,6 +97,11 @@ public class AuthController {
             if (auth.isAuthenticated()){
                 var token = jwtService.generateToken(isUserExist.getId());
                 var refreshToken = refreshTokenController.createRefreshToken(isUserExist);
+                Cookie tokenCookie = this.setCookie("token", token, 60 * 60);
+                Cookie refreshCookie = this.setCookie("refresh", refreshToken, 60 * 60 * 24 * 30);
+
+                response.addCookie(tokenCookie);
+                response.addCookie(refreshCookie);
                 return ResponseEntity.ok(new LoginRes("User Login Successfully", true, token, refreshToken));
             }
             return new ResponseEntity<>(new Default("Invalid Credentials", false, null, null), HttpStatus.UNAUTHORIZED);
@@ -106,15 +113,36 @@ public class AuthController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'USER', 'INSTRUCTOR')")
     @GetMapping("/logout")
-    public ResponseEntity<Default> logout() {
+    public ResponseEntity<Default> logout(HttpServletResponse response) {
         try {
             Boolean isDelete = refreshTokenController.deleteRefreshToken(userDetails.userDetails());
             if (isDelete) {
+                Cookie tokenCookie = this.deleteCookie("token");
+                Cookie refreshCookie = this.deleteCookie("refresh");
+
+                response.addCookie(tokenCookie);
+                response.addCookie(refreshCookie);
                 return new ResponseEntity<>(new Default("User Logout Successfully", true, null, null), HttpStatus.OK);
             }
             return new ResponseEntity<>(new Default("User Logout Failed", false, null, null), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private Cookie setCookie(String name, String value, int maxAge) {
+        Cookie cookie = new Cookie(name, value);
+        cookie.setPath("/");
+        cookie.setHttpOnly(false);
+        cookie.setMaxAge(maxAge);
+        return cookie;
+    }
+
+    private Cookie deleteCookie(String name) {
+        Cookie cookie = new Cookie(name, null);
+        cookie.setPath("/");
+        cookie.setHttpOnly(false);
+        cookie.setMaxAge(0);
+        return cookie;
     }
 }
