@@ -3,6 +3,7 @@ package com.lms.lms.service;
 import com.lms.lms.GlobalValue.PublicRoutes;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 @Service
 public class JwtFilter extends OncePerRequestFilter {
@@ -35,7 +37,18 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try {
-            String authHeader = request.getHeader("Authorization");
+//            String authHeader = request.getHeader("Authorization");
+            String authHeader = null;
+
+            Cookie[] cookies = request.getCookies();
+            if (cookies != null) {
+                for (Cookie cookie : cookies) {
+                    if(cookie.getName().equals("token")){
+                        authHeader = "Bearer " + cookie.getValue();
+                    }
+                }
+            }
+
             String token = null;
             String id = null;
 
