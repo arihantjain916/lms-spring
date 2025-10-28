@@ -22,6 +22,12 @@ public class RefreshToken {
     @Column(nullable = false, updatable = false)
     private String token;
 
+    @Column(nullable = true, updatable = false)
+    private String ipaddress;
+
+    @Column(nullable = true, updatable = false)
+    private String client;
+
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;

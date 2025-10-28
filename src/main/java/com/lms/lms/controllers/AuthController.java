@@ -10,6 +10,7 @@ import com.lms.lms.modals.User;
 import com.lms.lms.repo.UserRepo;
 import com.lms.lms.service.JwtService;
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,7 +68,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> register(@Valid @RequestBody Login login, HttpServletResponse response){
+    public ResponseEntity<?> register(@Valid @RequestBody Login login, HttpServletResponse response, HttpServletRequest request){
         try{
             User isUserExist = userRepo.findByUsername(login.getUsername()).orElse(null);
 
@@ -96,7 +97,7 @@ public class AuthController {
 
             if (auth.isAuthenticated()){
                 var token = jwtService.generateToken(isUserExist.getId());
-                var refreshToken = refreshTokenController.createRefreshToken(isUserExist);
+                var refreshToken = refreshTokenController.createRefreshToken(isUserExist, request.getRemoteAddr(),request.getHeader("User-Agent"));
                 Cookie tokenCookie = this.setCookie("token", token, 60 * 60);
                 Cookie refreshCookie = this.setCookie("refresh", refreshToken, 60 * 60 * 24 * 30);
 

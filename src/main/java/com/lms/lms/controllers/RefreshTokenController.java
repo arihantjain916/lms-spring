@@ -5,12 +5,10 @@ import com.lms.lms.modals.RefreshToken;
 import com.lms.lms.modals.User;
 import com.lms.lms.repo.RefreshTokenRepo;
 import com.lms.lms.service.JwtService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
 import java.util.UUID;
@@ -26,15 +24,15 @@ public class RefreshTokenController {
     private JwtService jwtService;
 
 
-    @GetMapping("/{token}")
-    public ResponseEntity<Default> generateToken(@PathVariable String token) {
+    @GetMapping("")
+    public ResponseEntity<Default> generateToken(HttpServletRequest request, @CookieValue(name = "refresh") String token) {
         try {
             var Token = refreshTokenRepo.findByTokenOrderByCreatedAtDesc(token);
-            System.out.println("Token: " + Token);
+
             if (Token == null) {
                 return ResponseEntity.badRequest().body(new Default("Invalid Token", false, null, null));
             }
-            if (Token.getExpiresAt().before(new Date())) {
+            if (Token.getExpiresAt().before(new Date()) || !Token.getClient().equals(request.getHeader("User-Agent")) || !Token.getIpaddress().equals(request.getRemoteAddr())) {
                 return ResponseEntity.badRequest().body(new Default("Invalid Token", false, null, null));
             }
             var newToken = jwtService.generateToken(Token.getUser().getId());
@@ -46,11 +44,13 @@ public class RefreshTokenController {
     }
 
 
-    public String createRefreshToken(User user) {
+    public String createRefreshToken(User user, String ipAddress, String header) {
         var token = new RefreshToken();
         token.setUser(user);
-        token.setExpiresAt(new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 2));
+        token.setExpiresAt(new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 30));
         token.setToken(UUID.randomUUID().toString());
+        token.setClient(header);
+        token.setIpaddress(ipAddress);
         refreshTokenRepo.save(token);
         return token.getToken();
     }
