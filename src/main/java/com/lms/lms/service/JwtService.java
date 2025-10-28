@@ -20,12 +20,14 @@ public class JwtService {
     @Autowired
     private EncryptionService encryptionService;
 
-    public String generateToken(String id){
+    public String generateToken(String id, String userAgent, String ipAddress){
 
 //        String encryptedId = encryptionService.encrypt(id);   //uncomment in production
         return Jwts
                 .builder()
                 .claim("id", id)
+                .claim("userAgent", userAgent)
+                .claim("ipAddress",ipAddress)
                 .subject("user")
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24))
@@ -46,6 +48,12 @@ public class JwtService {
 //        String id = extractClaim(token, claims -> claims.get("id", String.class));
 //        return encryptionService.decrypt(id);  //uncomment in production
         return extractClaim(token, claims -> claims.get("id", String.class));
+    }
+
+    public String extractData(String token, String data) {
+//        String id = extractClaim(token, claims -> claims.get("id", String.class));
+//        return encryptionService.decrypt(id);  //uncomment in production
+        return extractClaim(token, claims -> claims.get(data, String.class));
     }
 
     public boolean validateToken(String token, UserDetails userDetails) {

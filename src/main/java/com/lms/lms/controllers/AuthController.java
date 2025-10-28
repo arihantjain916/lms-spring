@@ -96,7 +96,7 @@ public class AuthController {
             Authentication auth = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(login.getUsername(), login.getPassword()));
 
             if (auth.isAuthenticated()){
-                var token = jwtService.generateToken(isUserExist.getId());
+                var token = jwtService.generateToken(isUserExist.getId(),request.getHeader("User-Agent"),request.getRemoteAddr());
                 var refreshToken = refreshTokenController.createRefreshToken(isUserExist, request.getRemoteAddr(),request.getHeader("User-Agent"));
                 Cookie tokenCookie = this.setCookie("token", token, 60 * 60);
                 Cookie refreshCookie = this.setCookie("refresh", refreshToken, 60 * 60 * 24 * 30);

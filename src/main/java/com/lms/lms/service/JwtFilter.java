@@ -51,10 +51,22 @@ public class JwtFilter extends OncePerRequestFilter {
 
             String token = null;
             String id = null;
+            String userAgent = null;
+            String ipAddress = null;
 
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 token = authHeader.substring(7);
                 id = jwtService.extractUsername(token);
+                userAgent = jwtService.extractData(token, "userAgent");
+                ipAddress = jwtService.extractData(token, "ipAddress");
+            }
+
+//            request.getHeader("User-Agent") ,request.getRemoteAddr()
+            assert userAgent != null;
+            assert ipAddress != null;
+
+            if(!userAgent.equals(request.getHeader("User-Agent")) || !ipAddress.equals(request.getRemoteAddr())){
+                throw new Exception("Invalid Token");
             }
 
             if (id != null && SecurityContextHolder.getContext().getAuthentication() == null) {

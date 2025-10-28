@@ -35,7 +35,7 @@ public class RefreshTokenController {
             if (Token.getExpiresAt().before(new Date()) || !Token.getClient().equals(request.getHeader("User-Agent")) || !Token.getIpaddress().equals(request.getRemoteAddr())) {
                 return ResponseEntity.badRequest().body(new Default("Invalid Token", false, null, null));
             }
-            var newToken = jwtService.generateToken(Token.getUser().getId());
+            var newToken = jwtService.generateToken(Token.getUser().getId(),request.getHeader("User-Agent") ,request.getRemoteAddr());
             return ResponseEntity.ok().body(new Default("Token Generated Successfully", true, null, newToken));
 
         } catch (Exception e) {
