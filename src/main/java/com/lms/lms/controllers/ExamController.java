@@ -257,7 +257,7 @@ public class ExamController {
 
             if(examDetails.isShowScoreImmediately()){
                 Boolean isGenerated = generateReportCard(examDetails,user);
-                System.out.println("generateReportCard: "+isGenerated);
+
                 if(!isGenerated){
                     return ResponseEntity.badRequest().body(new Default("Error in generating report card. Contact Support.", false, null, null));
                 }
@@ -348,7 +348,6 @@ public class ExamController {
             return Boolean.TRUE;
 
         } catch (Exception e) {
-            System.out.println("exception: "+ e.getMessage());
             return Boolean.FALSE;
         }
     }

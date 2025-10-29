@@ -10,12 +10,20 @@ import java.util.List;
 public class PublicRoutes {
 
     public List<String> PUBLIC = List.of(
-            "/auth/**", "/health", "/test", "/contact/**", "/upload/**",
-            "/course/**", "/category/**", "/ratings/**", "/blog/**"
+            "/api/auth/**", "/api/health", "/api/test", "/api/contact/**", "/api/upload/**"
+    );
+
+    public List<String> OpenForGet = List.of(
+            "/api/course/**", "/api/category/**", "/api/ratings/**", "/api/blog/**"
     );
 
     public String[] getPublicRoutes() {
         return PUBLIC.toArray(new String[0]);
+    }
+
+
+    public String[] getOpenForGetRoutes() {
+        return OpenForGet.toArray(new String[0]);
     }
 }
 

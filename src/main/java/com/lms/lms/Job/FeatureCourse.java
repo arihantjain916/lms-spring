@@ -28,7 +28,6 @@ public class FeatureCourse {
     @Transactional
     public void featureCourse() {
 
-        System.out.println("featureCourseJob");
         ZoneId IST = ZoneId.of("Asia/Kolkata");
 
 

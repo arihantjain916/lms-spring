@@ -60,34 +60,12 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(req -> req
-                        .requestMatchers("/auth/**", "/health", "/test", "/contact/**", "/upload/**", "/").permitAll()
-//                        .requestMatchers(HttpMethod.GET, "/course/**").permitAll()
-//                        .requestMatchers(HttpMethod.GET, "/category/**").permitAll()
-//                        .requestMatchers(HttpMethod.GET, "/ratings/**").permitAll()
-//                        .requestMatchers(HttpMethod.GET, "/blog").permitAll()
-                        .requestMatchers(HttpMethod.GET, publicRoutes.getPublicRoutes()).permitAll()
+                        .requestMatchers("/auth/**", "/health", "/test", "/contact/**", "/upload/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/course/**", "/category/**", "/ratings/**", "/blog/**").permitAll()
                         .anyRequest().authenticated())
-                .exceptionHandling(ex ->
-
-                        ex.accessDeniedHandler(customAccessDeniedHandler)
+                .exceptionHandling(ex -> ex.accessDeniedHandler(customAccessDeniedHandler)
                                 .authenticationEntryPoint(customAuthenticationEntryPoint)
-
-
                 )
-//                .exceptionHandling(ex -> ex
-//                        .accessDeniedHandler((req, res, e) -> {
-//                            globalExceptionHandler.handleException(
-//                                    res, HttpStatus.FORBIDDEN, "Access Denied",
-//                                    "You are not authorized to access this resource"
-//                            );
-//                        })
-//                        .authenticationEntryPoint((req, res, e) -> {
-//                            globalExceptionHandler.handleException(
-//                                    res, HttpStatus.UNAUTHORIZED, "Unauthorized",
-//                                    "You are not authorized to access this resource"
-//                            );
-//                        })
-//                )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();

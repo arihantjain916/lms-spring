@@ -64,7 +64,7 @@ public class RatingController {
             }
 
             var isUserAlreadyRated = ratingRepo.existsByCourseIdAndUserId(isCourseExist.getId(), isUserExist.getId());
-            System.out.println(isUserAlreadyRated);
+
             if (isUserAlreadyRated) {
                 return ResponseEntity.badRequest().body(new Default("User Already Rated", false, null, null));
             }

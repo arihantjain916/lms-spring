@@ -84,7 +84,6 @@ public class CategoryController {
             category.setSlug(slug);
 
             if(Boolean.parseBoolean(categoryReq.getId())){
-                System.out.println("v " + categoryReq.getId());
                 category.setId(categoryReq.getId());
             }
 

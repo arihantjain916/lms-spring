@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.http.server.PathContainer;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -29,7 +30,7 @@ public class JwtFilter extends OncePerRequestFilter {
     @Autowired
     ApplicationContext context;
 
-    private static final AntPathMatcher PM = new AntPathMatcher();
+    private static final AntPathMatcher pathMatcher = new AntPathMatcher();
     @Autowired
     private PublicRoutes publicRoutes;
 
@@ -37,8 +38,23 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try {
-//            String authHeader = request.getHeader("Authorization");
             String authHeader = null;
+//            String authHeader = request.getHeader("Authorization");
+
+            String requestUri = request.getRequestURI();
+
+            boolean matches = publicRoutes.PUBLIC.stream()
+                    .anyMatch(pattern -> pathMatcher.match(pattern, requestUri));
+
+            boolean openForGet = request.getMethod().equals("GET") && publicRoutes.OpenForGet.stream()
+                    .anyMatch(pattern -> pathMatcher.match(pattern, requestUri));
+
+
+
+            if(matches || openForGet) {
+                filterChain.doFilter(request, response);
+                return;
+            }
 
             Cookie[] cookies = request.getCookies();
             if (cookies != null) {
