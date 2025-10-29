@@ -5,7 +5,9 @@ import com.lms.lms.modals.RefreshToken;
 import com.lms.lms.modals.User;
 import com.lms.lms.repo.RefreshTokenRepo;
 import com.lms.lms.service.JwtService;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,7 +27,7 @@ public class RefreshTokenController {
 
 
     @GetMapping("")
-    public ResponseEntity<Default> generateToken(HttpServletRequest request, @CookieValue(name = "refresh") String token) {
+    public ResponseEntity<Default> generateToken(HttpServletRequest request, @CookieValue(name = "refresh") String token, HttpServletResponse response) {
         try {
             var Token = refreshTokenRepo.findByTokenOrderByCreatedAtDesc(token);
 
@@ -36,6 +38,9 @@ public class RefreshTokenController {
                 return ResponseEntity.badRequest().body(new Default("Invalid Token", false, null, null));
             }
             var newToken = jwtService.generateToken(Token.getUser().getId(),request.getHeader("User-Agent") ,request.getRemoteAddr());
+
+            Cookie tokenCookie = this.setCookie(newToken, 60 * 60);
+            response.addCookie(tokenCookie);
             return ResponseEntity.ok().body(new Default("Token Generated Successfully", true, null, newToken));
 
         } catch (Exception e) {
@@ -62,5 +67,13 @@ public class RefreshTokenController {
         } catch (Exception e) {
             return Boolean.FALSE;
         }
+    }
+
+    private Cookie setCookie(String value, int maxAge) {
+        Cookie cookie = new Cookie("token", value);
+        cookie.setPath("/");
+        cookie.setHttpOnly(false);
+        cookie.setMaxAge(maxAge);
+        return cookie;
     }
 }
