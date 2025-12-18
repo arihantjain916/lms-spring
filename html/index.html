@@ -96,7 +96,7 @@
         }
 
         function showGreeting(message) {
-            const disMessage = message.message
+            const disMessage = message?.message
             addMessage(disMessage, "assistant");
         }
 
@@ -108,21 +108,58 @@
         //     chat.scrollTop = chat.scrollHeight;
         // }
 
-        function addMessage(text, role) {
-            const div = document.createElement("div");
-            div.className = `message ${role}`;
+        // function addMessage(text, role) {
+        //     let i = 0;
+        //     const div = document.createElement("div");
+        //     div.className = `message ${role}`;
 
-            if (role === "assistant") {
-                // AI response → markdown → HTML
-                div.innerHTML = DOMPurify.sanitize(marked.parse(text));
-            } else {
-                // User input → plain text (safe)
-                div.textContent = text;
+        //     if (role === "assistant") {
+        //         // AI response → markdown → HTML
+        //         const purifiedDom = DOMPurify.sanitize(marked.parse(text));
+        //         const interval = setInterval(() => {
+        //             div.innerHTML += purifiedDom[i++];
+        //             if (i >= purifiedDom.length) clearInterval(interval);
+        //         }, 20);
+        //     } else {
+        //         // User input → plain text (safe)
+        //         div.textContent = text;
+        //     }
+
+        //     chat.appendChild(div);
+        //     chat.scrollTop = chat.scrollHeight;
+        // }
+
+        function addMessage(text, role) {
+                const div = document.createElement("div");
+                div.className = `message ${role}`;
+                chat.appendChild(div);
+                chat.scrollTop = chat.scrollHeight;
+
+                if (role === "assistant") {
+                    // 1️⃣ Convert markdown → plain text first
+                    const temp = document.createElement("div");
+                    temp.innerHTML = DOMPurify.sanitize(marked.parse(text));
+                    const plainText = temp.textContent || temp.innerText;
+
+                    let i = 0;
+                    const interval = setInterval(() => {
+                        div.textContent += plainText.charAt(i++);
+                        chat.scrollTop = chat.scrollHeight;
+
+                        if (i >= plainText.length) {
+                            clearInterval(interval);
+
+                            // 2️⃣ Replace typed text with final rendered HTML
+                            div.innerHTML = DOMPurify.sanitize(marked.parse(text));
+                        }
+                    }, 20);
+
+                } else {
+                    // User message (plain text)
+                    div.textContent = text;
+                }
             }
 
-            chat.appendChild(div);
-            chat.scrollTop = chat.scrollHeight;
-        }
 
     </script>
 
