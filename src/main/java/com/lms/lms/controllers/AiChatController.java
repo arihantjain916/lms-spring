@@ -45,27 +45,22 @@ public class AiChatController {
         try {
             LocalDate today = LocalDate.now(ZoneOffset.UTC);
 
-//            var isUserExist = userDetails.userDetails();
-//
-//            if (isUserExist == null) {
-//                return ResponseEntity.badRequest().body(new Default("User don't exist", false, null, null));
-//            }
+            var isUserExist = userDetails.userDetails();
+
+            if (isUserExist == null) {
+                return Map.of("error", "Invalid User", "status", false);
+            }
             AiDailyUsage usage = usageRepo
-                    .findByUserIdAndUsageDateForUpdate("1a8f3943-acc7-42da-a007-83066bd39c52", today)
+                    .findByUserIdAndUsageDateForUpdate(isUserExist.getId(), today)
                     .orElseGet(() -> {
                         AiDailyUsage u = new AiDailyUsage();
 
-                        u.setUserId("1a8f3943-acc7-42da-a007-83066bd39c52");
+                        u.setUserId(isUserExist.getId());
                         u.setUsageDate(today);
                         u.setQuestionsUsed(0);
                         u.setTokensUsed(0);
                         return usageRepo.save(u);
                     });
-
-//            if (isUserExist.getRole() == User.Role.STUDENT
-//                    && usage.getQuestionsUsed() >= STUDENT_DAILY_QUESTION_LIMIT) {
-//                throw new RuntimeException("Daily AI question limit reached");
-//            }
 
             int safeMaxOutputTokens = calculateSafeMaxOutputTokens(prompt, usage.getTokensUsed());
 
