@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Chat UI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+    <link rel="stylesheet" href="index.css">
+
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+
+</head>
+
+<body>
+
+    <!-- Messages -->
+    <div class="chat-container" id="chat">
+        <div class="message assistant">
+            👋 <strong>Welcome to the Doubt Clearing Platform</strong><br>
+            <small>Your space to ask questions and get clear answers.</small>
+            <button onclick="connect()">Click to connect to Live AI Agent</button>
+        </div>
+    </div>
+
+    <!-- Input -->
+    <div class="input-container">
+        <div class="input-box">
+            <input id="input" type="text" placeholder="Send a message..." oninput="toggleSend()"
+                onkeydown="if(event.key === 'Enter') sendMessage()" />
+
+            <button class="send-btn" id="sendBtn" onclick="sendMessage()" disabled>
+                <span class="material-icons">send</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const input = document.getElementById("input");
+        const chat = document.getElementById("chat");
+        const sendBtn = document.getElementById("sendBtn");
+
+        const stompClient = new StompJs.Client({
+            webSocketFactory: () => new SockJS('http://localhost:8080/api/ws')
+        });
+
+        stompClient.onConnect = (frame) => {
+            // setConnected(true);
+            console.log('Connected: ' + frame);
+            stompClient.subscribe('/topic/chat/response', (greeting) => {
+                console.log("Received from server: " + greeting);
+                showGreeting(JSON.parse(greeting.body));
+            });
+        };
+
+        stompClient.onWebSocketError = (error) => {
+            console.error('Error with websocket', error);
+        };
+
+        function toggleSend() {
+            sendBtn.disabled = input.value.trim() === "";
+        }
+
+        // To connect to the server
+        function connect() {
+            stompClient.activate();
+            alert("Connected to Live AI Agent");
+        }
+
+
+        function disconnect() {
+            stompClient.deactivate();
+            // setConnected(false);
+            console.log("Disconnected");
+        }
+
+        function sendMessage() {
+            const text = input.value.trim();
+            if (!text) return;
+
+            addMessage(text, "user");
+            input.value = "";
+            toggleSend();
+
+            stompClient.publish({
+                destination: "/app/chat",
+                body: JSON.stringify({ 'message': text })
+            });
+        }
+
+        function showGreeting(message) {
+            const disMessage = message.message
+            addMessage(disMessage, "assistant");
+        }
+
+        // function addMessage(text, role) {
+        //     const div = document.createElement("div");
+        //     div.className = `message ${role}`;
+        //     div.textContent = text;
+        //     chat.appendChild(div);
+        //     chat.scrollTop = chat.scrollHeight;
+        // }
+
+        function addMessage(text, role) {
+            const div = document.createElement("div");
+            div.className = `message ${role}`;
+
+            if (role === "assistant") {
+                // AI response → markdown → HTML
+                div.innerHTML = DOMPurify.sanitize(marked.parse(text));
+            } else {
+                // User input → plain text (safe)
+                div.textContent = text;
+            }
+
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+    </script>
+
+</body>
+
+</html>
