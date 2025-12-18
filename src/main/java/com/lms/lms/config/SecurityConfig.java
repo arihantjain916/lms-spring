@@ -60,7 +60,8 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(req -> req
-                        .requestMatchers("/auth/**", "/health", "/test", "/contact/**", "/upload/**", "/ws/**").permitAll()
+//                        "/ws/**"
+                        .requestMatchers("/auth/**", "/health", "/test", "/contact/**", "/upload/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/course/**", "/category/**", "/ratings/**", "/blog/**").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex.accessDeniedHandler(customAccessDeniedHandler)
