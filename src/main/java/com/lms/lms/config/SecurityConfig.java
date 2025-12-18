@@ -60,7 +60,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(req -> req
-                        .requestMatchers("/auth/**", "/health", "/test", "/contact/**", "/upload/**", "/gs-guide-websocket/**").permitAll()
+                        .requestMatchers("/auth/**", "/health", "/test", "/contact/**", "/upload/**", "/ws/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/course/**", "/category/**", "/ratings/**", "/blog/**").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex.accessDeniedHandler(customAccessDeniedHandler)
@@ -88,7 +88,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000", "https://localhost:5173", "http://localhost:5500"));
+        config.setAllowedOrigins(List.of("http://localhost:3000", "https://localhost:5173", "http://localhost:5500", "http://127.0.0.1:5500"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
