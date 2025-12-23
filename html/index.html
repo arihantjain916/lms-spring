@@ -16,17 +16,30 @@
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 
 </head>
 
 <body>
 
+<div>
+    <div>
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" value="arihant@125">
+    </div>
+    <div>
+        <label for="password">Password</label>
+        <input id="password" name="password" type="text" value="aarihant">
+    </div>
+    <button onclick="login()">Login</button>
+</div>
     <!-- Messages -->
     <div class="chat-container" id="chat">
         <div class="message assistant">
             👋 <strong>Welcome to the Doubt Clearing Platform</strong><br>
             <small>Your space to ask questions and get clear answers.</small>
             <button onclick="connect()">Click to connect to Live AI Agent</button>
+            <button onclick="fetchChats()">Click to fetch Old Chats</button>
         </div>
     </div>
 
@@ -47,15 +60,22 @@
         const chat = document.getElementById("chat");
         const sendBtn = document.getElementById("sendBtn");
 
+        // Authorization
+        // Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjFhOGYzOTQzLWFjYzctNDJkYS1hMDA3LTgzMDY2YmQzOWM1MiIsInVzZXJBZ2VudCI6IlBvc3RtYW5SdW50aW1lLzcuNTEuMCIsImlwQWRkcmVzcyI6IjA6MDowOjA6MDowOjA6MSIsInN1YiI6InVzZXIiLCJpYXQiOjE3NjY0MDE0MTUsImV4cCI6MTc2NjQ4NzgxNX0.qpO4O0QMACwYbJZ3Mamyhv75_iYDqQNwF6ytrYxHjzA
+        // const stompClient = new StompJs.Client({
+        //     webSocketFactory: () => new SockJS('http://localhost:8080/api/ws')
+        // });
+
+        let token = "eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjFhOGYzOTQzLWFjYzctNDJkYS1hMDA3LTgzMDY2YmQzOWM1MiIsInVzZXJBZ2VudCI6Ik1vemlsbGEvNS4wIChXaW5kb3dzIE5UIDEwLjA7IFdpbjY0OyB4NjQpIEFwcGxlV2ViS2l0LzUzNy4zNiAoS0hUTUwsIGxpa2UgR2Vja28pIENocm9tZS8xNDMuMC4wLjAgU2FmYXJpLzUzNy4zNiBFZGcvMTQzLjAuMC4wIiwiaXBBZGRyZXNzIjoiMDowOjA6MDowOjA6MDoxIiwic3ViIjoidXNlciIsImlhdCI6MTc2NjQ2NTM2NywiZXhwIjoxNzY2NTUxNzY3fQ.GuLc2Cx4gesgeVA9iW5ySjjesJ0uqN7eEJfg2eoL-Kg";
+
         const stompClient = new StompJs.Client({
-            webSocketFactory: () => new SockJS('http://localhost:8080/api/ws')
+            webSocketFactory: () => new SockJS('http://localhost:8080/api/ws'),
         });
 
         stompClient.onConnect = (frame) => {
             // setConnected(true);
             console.log('Connected: ' + frame);
             stompClient.subscribe('/topic/chat/response', (greeting) => {
-                console.log("Received from server: " + greeting);
                 showGreeting(JSON.parse(greeting.body));
             });
         };
@@ -69,23 +89,26 @@
         }
 
         // To connect to the server
-        function connect() {
+        function connect(token) {
+            stompClient.connectHeaders = {
+                Authorization: `Bearer ${token}`
+            };
             stompClient.activate();
             alert("Connected to Live AI Agent");
         }
+        stompClient.debug = (e) => console.log("Debug: " + e);
 
 
         function disconnect() {
             stompClient.deactivate();
-            // setConnected(false);
-            console.log("Disconnected");
+            alert("Disconnected from Live AI Agent");
         }
 
         function sendMessage() {
             const text = input.value.trim();
             if (!text) return;
 
-            addMessage(text, "user");
+            addMessage(text, "user", false);
             input.value = "";
             toggleSend();
 
@@ -97,68 +120,82 @@
 
         function showGreeting(message) {
             const disMessage = message?.message
-            addMessage(disMessage, "assistant");
+            addMessage(disMessage, "assistant", true);
         }
 
-        // function addMessage(text, role) {
-        //     const div = document.createElement("div");
-        //     div.className = `message ${role}`;
-        //     div.textContent = text;
-        //     chat.appendChild(div);
-        //     chat.scrollTop = chat.scrollHeight;
-        // }
+        function addMessage(text, role, animate = true) {
+            const div = document.createElement("div");
+            div.className = `message ${role}`;
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
 
-        // function addMessage(text, role) {
-        //     let i = 0;
-        //     const div = document.createElement("div");
-        //     div.className = `message ${role}`;
+            if (role === "assistant" && animate) {
+                // 1️⃣ Convert markdown → plain text first
+                const temp = document.createElement("div");
+                temp.innerHTML = DOMPurify.sanitize(marked.parse(text));
+                const plainText = temp.textContent || temp.innerText;
 
-        //     if (role === "assistant") {
-        //         // AI response → markdown → HTML
-        //         const purifiedDom = DOMPurify.sanitize(marked.parse(text));
-        //         const interval = setInterval(() => {
-        //             div.innerHTML += purifiedDom[i++];
-        //             if (i >= purifiedDom.length) clearInterval(interval);
-        //         }, 20);
-        //     } else {
-        //         // User input → plain text (safe)
-        //         div.textContent = text;
-        //     }
+                let i = 0;
+                const interval = setInterval(() => {
+                    div.textContent += plainText.charAt(i++);
+                    chat.scrollTop = chat.scrollHeight;
 
-        //     chat.appendChild(div);
-        //     chat.scrollTop = chat.scrollHeight;
-        // }
+                    if (i >= plainText.length) {
+                        clearInterval(interval);
 
-        function addMessage(text, role) {
-                const div = document.createElement("div");
-                div.className = `message ${role}`;
-                chat.appendChild(div);
-                chat.scrollTop = chat.scrollHeight;
+                        // 2️⃣ Replace typed text with final rendered HTML
+                        div.innerHTML = DOMPurify.sanitize(marked.parse(text));
+                    }
+                }, 20);
 
-                if (role === "assistant") {
-                    // 1️⃣ Convert markdown → plain text first
-                    const temp = document.createElement("div");
-                    temp.innerHTML = DOMPurify.sanitize(marked.parse(text));
-                    const plainText = temp.textContent || temp.innerText;
-
-                    let i = 0;
-                    const interval = setInterval(() => {
-                        div.textContent += plainText.charAt(i++);
-                        chat.scrollTop = chat.scrollHeight;
-
-                        if (i >= plainText.length) {
-                            clearInterval(interval);
-
-                            // 2️⃣ Replace typed text with final rendered HTML
-                            div.innerHTML = DOMPurify.sanitize(marked.parse(text));
-                        }
-                    }, 20);
-
-                } else {
-                    // User message (plain text)
-                    div.textContent = text;
-                }
+            } else {
+                // User message (plain text)
+                div.textContent = text;
             }
+        }
+
+        async function fetchChats() {
+            try {
+                const res = await axios.get("http://localhost:8080/api/chat", {
+                    withCredentials: true,
+                    headers: {
+                        // 'Content-Type': 'application/json',
+                        // Authorization: `Bearer ${token}`
+                    }
+                })
+
+                const chats = res?.data?.data
+
+                chats?.forEach(chatItem => {
+                    // 1️⃣ User message (prompt)
+                    if (chatItem.prompt) {
+                        addMessage(chatItem.prompt, "user", false);
+                    }
+
+                    // 2️⃣ Assistant message (response)
+                    if (chatItem.response) {
+                        addMessage(chatItem.response, "assistant", false);
+                    }
+                });
+            }
+            catch (e) {
+                console.log("{e}", e)
+            }
+        }
+
+        async function login() {
+            // e.preventDefault()
+
+            const payload = {
+                username: document.getElementById("username").value,
+                password: document.getElementById("password").value
+            }
+            const res = await axios.post("http://localhost:8080/api/auth/login", payload, { withCredentials: true, })
+            token = res?.data?.token
+
+            await fetchChats()
+            connect(token)
+        }
 
 
     </script>

@@ -16,15 +16,19 @@ public class ChatService {
 
     public Object chat(int safeMaxOutputTokens, String prompt) throws Exception {
         try (Client client = Client.builder().apiKey(geminiApiKey).build()) {
-
-            System.out.println("prompt>>>>>>>>" + prompt);
-
             GenerateContentConfig config =
                     GenerateContentConfig.builder()
                             .maxOutputTokens(safeMaxOutputTokens)
                             .temperature(0.4f)
                             .systemInstruction(
-                                    Content.fromParts(Part.fromText("You are a teaching assistant who help students in learning new things and answer their questions. Limit your answer in about 500 words maximum.")))
+                                    Content.fromParts(Part.fromText("""
+                                            You are a teaching assistant who help students in learning new things and answer their questions. Limit your answer in about 500 words maximum. Rules:
+                                            - Explain concepts clearly and accurately
+                                            - Adjust explanations based on the user's role
+                                            - Use simple examples when helpful
+                                            - Respond in %s
+                                            - Limit response to about 100 words
+                                            """)))
                             .build();
 
 
