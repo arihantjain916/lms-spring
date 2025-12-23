@@ -8,7 +8,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.http.server.PathContainer;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,7 +17,6 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 @Service
 public class JwtFilter extends OncePerRequestFilter {
@@ -82,6 +80,11 @@ public class JwtFilter extends OncePerRequestFilter {
             assert ipAddress != null;
 
             if(!userAgent.equals(request.getHeader("User-Agent")) || !ipAddress.equals(request.getRemoteAddr())){
+                System.out.println("1<<<<<<<<>>>>>>>>>>>>>");
+                System.out.println("userAgent" + userAgent);
+                System.out.println("request.getHeader('User-Agent')" + request.getHeader("User-Agent"));
+                System.out.println("ipAddress" + ipAddress);
+                System.out.println("request.getRemoteAddr()" + request.getRemoteAddr());
                 throw new Exception("Invalid Token");
             }
 

@@ -61,7 +61,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(req -> req
 //                        "/ws/**"
-                        .requestMatchers("/auth/**", "/health", "/test", "/contact/**", "/upload/**").permitAll()
+                        .requestMatchers("/auth/**", "/health", "/test", "/contact/**", "/upload/**", "/ws/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/course/**", "/category/**", "/ratings/**", "/blog/**").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex.accessDeniedHandler(customAccessDeniedHandler)

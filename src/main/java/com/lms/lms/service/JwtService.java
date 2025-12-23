@@ -5,6 +5,10 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +23,9 @@ public class JwtService {
 
     @Autowired
     private EncryptionService encryptionService;
+
+    @Autowired
+    ApplicationContext context;
 
     public String generateToken(String id, String userAgent, String ipAddress){
 
@@ -77,5 +84,21 @@ public class JwtService {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }
+
+    public Authentication getAuthentication(String token) {
+        var id = extractUsername(token);
+
+        UserDetails userDetails = context.getBean(UserDetailsService.class).loadUserById(id);
+
+        if (!validateToken(token, userDetails)) {
+            throw new BadCredentialsException("Invalid JWT token");
+        }
+
+        return new UsernamePasswordAuthenticationToken(
+                userDetails,
+                null,
+                userDetails.getAuthorities()
+        );
     }
 }
