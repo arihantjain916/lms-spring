@@ -17,6 +17,8 @@ public class ChatService {
     public Object chat(int safeMaxOutputTokens, String prompt) throws Exception {
         try (Client client = Client.builder().apiKey(geminiApiKey).build()) {
 
+            System.out.println("prompt>>>>>>>>" + prompt);
+
             GenerateContentConfig config =
                     GenerateContentConfig.builder()
                             .maxOutputTokens(safeMaxOutputTokens)

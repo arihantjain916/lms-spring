@@ -136,6 +136,8 @@ public class AuthController {
         cookie.setPath("/");
         cookie.setHttpOnly(false);
         cookie.setMaxAge(maxAge);
+        cookie.setAttribute("SameSite", "None");
+        cookie.setAttribute("Secure", "true");
         return cookie;
     }
 

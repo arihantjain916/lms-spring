@@ -1,6 +1,9 @@
 package com.lms.lms.controllers;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lms.lms.GlobalValue.UserDetails;
+import com.lms.lms.dto.response.Default;
 import com.lms.lms.modals.AiChatBot;
 import com.lms.lms.modals.AiDailyUsage;
 import com.lms.lms.repo.AiChatBotRepo;
@@ -8,17 +11,22 @@ import com.lms.lms.repo.AiDailyUsageRepo;
 import com.lms.lms.service.ChatService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.security.Principal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.Map;
 
 @RestController
+@RequestMapping("/chat")
 public class AiChatController {
 
     private static final int STUDENT_DAILY_QUESTION_LIMIT = 10;
@@ -34,28 +42,29 @@ public class AiChatController {
 
     @Autowired
     private UserDetails userDetails;
-
+    //
     @Autowired
     private ChatService chatService;
 
     @Transactional
     @MessageMapping("/chat")
     @SendTo("/topic/chat/response")
-    public Object askGemini(@RequestBody String prompt) {
+    public Object askGemini(String prompt, Principal principal) {
         try {
             LocalDate today = LocalDate.now(ZoneOffset.UTC);
 
-            var isUserExist = userDetails.userDetails();
+            String username = principal.getName();
 
-            if (isUserExist == null) {
+
+            if (principal == null) {
                 return Map.of("error", "Invalid User", "status", false);
             }
             AiDailyUsage usage = usageRepo
-                    .findByUserIdAndUsageDateForUpdate(isUserExist.getId(), today)
+                    .findByUserIdAndUsageDateForUpdate(principal.getName(), today) // here in username id is stored.
                     .orElseGet(() -> {
                         AiDailyUsage u = new AiDailyUsage();
 
-                        u.setUserId(isUserExist.getId());
+                        u.setUserId(principal.getName());
                         u.setUsageDate(today);
                         u.setQuestionsUsed(0);
                         u.setTokensUsed(0);
@@ -68,7 +77,11 @@ public class AiChatController {
                 throw new RuntimeException("Not enough AI tokens remaining today");
             }
 
-            Map<String, Object> chat = (Map<String, Object>) chatService.chat(safeMaxOutputTokens, prompt);
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode json = mapper.readTree(prompt);
+
+            String message = json.get("message").asText();
+            Map<String, Object> chat = (Map<String, Object>) chatService.chat(safeMaxOutputTokens, message);
 
             usage.setQuestionsUsed(usage.getQuestionsUsed() + 1);
             usage.setTokensUsed(usage.getTokensUsed() + (Integer) chat.get("totalTokens"));
@@ -78,7 +91,7 @@ public class AiChatController {
 
             AiChatBot msg = new AiChatBot();
             msg.setUserId("1a8f3943-acc7-42da-a007-83066bd39c52");
-            msg.setPrompt(prompt);
+            msg.setPrompt(message);
             msg.setResponse((String) chat.get("message"));
             msg.setPromptTokens((Integer) chat.get("promptTokens"));
             msg.setCompletionTokens((Integer) chat.get("completionTokens"));
@@ -103,5 +116,20 @@ public class AiChatController {
                 STUDENT_MAX_RESPONSE_TOKENS,
                 remainingTokens - estimatedPromptTokens
         );
+    }
+
+    @GetMapping("")
+    public ResponseEntity<Default> getUserChat() {
+        try {
+            var isUserExist = userDetails.userDetails();
+            if (isUserExist == null) {
+                return new ResponseEntity<>(new Default("User Does Not Exists", false, null, null), HttpStatus.BAD_REQUEST);
+            }
+
+            var data = chatRepo.findByUserId(isUserExist.getId());
+            return new ResponseEntity<>(new Default("User Chat fetched Successfully", true, null, data), HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }
