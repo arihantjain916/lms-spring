@@ -80,11 +80,6 @@ public class JwtFilter extends OncePerRequestFilter {
             assert ipAddress != null;
 
             if(!userAgent.equals(request.getHeader("User-Agent")) || !ipAddress.equals(request.getRemoteAddr())){
-                System.out.println("1<<<<<<<<>>>>>>>>>>>>>");
-                System.out.println("userAgent" + userAgent);
-                System.out.println("request.getHeader('User-Agent')" + request.getHeader("User-Agent"));
-                System.out.println("ipAddress" + ipAddress);
-                System.out.println("request.getRemoteAddr()" + request.getRemoteAddr());
                 throw new Exception("Invalid Token");
             }
 
