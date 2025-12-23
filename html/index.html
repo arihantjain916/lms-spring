@@ -137,7 +137,7 @@
 
                 let i = 0;
                 const interval = setInterval(() => {
-                    div.textContent += plainText.charAt(i++);
+                    div.textContent += DOMPurify.sanitize(plainText.charAt(i++));
                     chat.scrollTop = chat.scrollHeight;
 
                     if (i >= plainText.length) {
@@ -149,8 +149,7 @@
                 }, 20);
 
             } else {
-                // User message (plain text)
-                div.textContent = text;
+                div.innerHTML = DOMPurify.sanitize(marked.parse(text));
             }
         }
 
@@ -158,21 +157,16 @@
             try {
                 const res = await axios.get("http://localhost:8080/api/chat", {
                     withCredentials: true,
-                    headers: {
-                        // 'Content-Type': 'application/json',
-                        // Authorization: `Bearer ${token}`
-                    }
                 })
 
                 const chats = res?.data?.data
 
                 chats?.forEach(chatItem => {
-                    // 1️⃣ User message (prompt)
+
                     if (chatItem.prompt) {
                         addMessage(chatItem.prompt, "user", false);
                     }
 
-                    // 2️⃣ Assistant message (response)
                     if (chatItem.response) {
                         addMessage(chatItem.response, "assistant", false);
                     }

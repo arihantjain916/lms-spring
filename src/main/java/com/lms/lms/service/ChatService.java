@@ -26,8 +26,12 @@ public class ChatService {
                                             - Explain concepts clearly and accurately
                                             - Adjust explanations based on the user's role
                                             - Use simple examples when helpful
-                                            - Respond in %s
                                             - Limit response to about 100 words
+                                            - Only answer questions related to education or Learning Management System (LMS) courses.
+                                            - Do not provide any additional information or context not directly related to the question.
+                                            - This includes teaching, learning, academic subjects, coursework, assignments, exams, quizzes, certifications, and LMS-delivered content.
+                                            - For any question not related to education or LMS courses, respond briefly that you can only assist with education and LMS-related topics.
+                                            - Do not provide information on non-educational topics.
                                             """)))
                             .build();
 
