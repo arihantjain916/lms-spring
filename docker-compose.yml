@@ -41,7 +41,7 @@ services:
       DB_USER: arihant
       DB_PASSWORD: arihant
       CLOUDINARY_URL: cloudinary://167819149517745:UvL0SIFY1wpKFSveu_tO_34Yhq4@dbbyts6io
-      JWT_SECRET: "$$}M6bDU6z2|KT0vzw-JP5PM"
+      JWT_SECRET: "yZzN8KX6m7rZPZz6dZ0xZc2Xz1x2zv9wPpQ7K6E5F0U="
       GEMINI_API_KEY: "AIzaSyBmrdSoRiFeftcDSWDwhLe_T0vzw-JP5PM"
     ports:
       - "8598:8080"
