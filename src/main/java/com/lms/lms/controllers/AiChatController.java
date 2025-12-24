@@ -23,6 +23,7 @@ import java.security.Principal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -53,12 +54,10 @@ public class AiChatController {
         try {
             LocalDate today = LocalDate.now(ZoneOffset.UTC);
 
-            String username = principal.getName();
-
-
             if (principal == null) {
                 return Map.of("error", "Invalid User", "status", false);
             }
+
             AiDailyUsage usage = usageRepo
                     .findByUserIdAndUsageDateForUpdate(principal.getName(), today) // here in username id is stored.
                     .orElseGet(() -> {
@@ -81,7 +80,9 @@ public class AiChatController {
             JsonNode json = mapper.readTree(prompt);
 
             String message = json.get("message").asText();
-            Map<String, Object> chat = (Map<String, Object>) chatService.chat(safeMaxOutputTokens, message);
+
+            List<String> prompts = chatRepo.getPromptsByUserId(principal.getName());
+            Map<String, Object> chat = (Map<String, Object>) chatService.chat(safeMaxOutputTokens, message, prompts);
 
             usage.setQuestionsUsed(usage.getQuestionsUsed() + 1);
             usage.setTokensUsed(usage.getTokensUsed() + (Integer) chat.get("totalTokens"));

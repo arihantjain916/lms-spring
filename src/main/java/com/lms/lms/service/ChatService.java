@@ -5,6 +5,7 @@ import com.google.genai.types.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -14,14 +15,15 @@ public class ChatService {
     private String geminiApiKey;
 
 
-    public Object chat(int safeMaxOutputTokens, String prompt) throws Exception {
+    public Object chat(int safeMaxOutputTokens, String prompt, List<String> prompts) throws Exception {
         try (Client client = Client.builder().apiKey(geminiApiKey).build()) {
+            String previousChats = String.join("\n- ", prompts);
             GenerateContentConfig config =
                     GenerateContentConfig.builder()
                             .maxOutputTokens(safeMaxOutputTokens)
                             .temperature(0.4f)
                             .systemInstruction(
-                                    Content.fromParts(Part.fromText("""
+                                    Content.fromParts(Part.fromText(String.format("""
                                             You are a teaching assistant who help students in learning new things and answer their questions. Limit your answer in about 500 words maximum. Rules:
                                             - Explain concepts clearly and accurately
                                             - Adjust explanations based on the user's role
@@ -32,7 +34,9 @@ public class ChatService {
                                             - This includes teaching, learning, academic subjects, coursework, assignments, exams, quizzes, certifications, and LMS-delivered content.
                                             - For any question not related to education or LMS courses, respond briefly that you can only assist with education and LMS-related topics.
                                             - Do not provide information on non-educational topics.
-                                            """)))
+                                            - This are some previous chats of user for context: %s
+                                            """, previousChats))
+                                    ))
                             .build();
 
 
