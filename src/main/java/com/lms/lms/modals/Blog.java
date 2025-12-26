@@ -48,7 +48,9 @@ public class Blog {
     @Column(nullable = false)
     private Staus status = Staus.DRAFT;
 
-    private Boolean isFeatured = Boolean.FALSE;
+
+    @OneToOne(mappedBy = "blog", cascade = CascadeType.ALL, orphanRemoval = true)
+    private BlogMeta blogMeta;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

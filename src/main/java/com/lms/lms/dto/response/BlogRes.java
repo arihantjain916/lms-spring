@@ -21,6 +21,7 @@ public class BlogRes {
     private String tag;
     private String imageUrl;
     private UserRes user;
+    private BlogMetaRes blogMeta;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "d MMMM, yyyy")
     private LocalDateTime createdAt;
