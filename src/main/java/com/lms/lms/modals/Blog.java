@@ -26,7 +26,10 @@ public class Blog {
     private String title, slug;
 
     @Column(nullable = false)
-    private String read_time, description, content;
+    private String read_time, description;
+
+    @Column(nullable = false, columnDefinition = "text")
+    private String content;
 
     @Column(nullable = false)
     private String Tag;

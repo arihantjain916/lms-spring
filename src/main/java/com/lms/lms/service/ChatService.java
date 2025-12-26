@@ -28,7 +28,7 @@ public class ChatService {
                                             - Explain concepts clearly and accurately
                                             - Adjust explanations based on the user's role
                                             - Use simple examples when helpful
-                                            - Limit response to about 100 words
+                                            - Limit response to about 50 words
                                             - Only answer questions related to education or Learning Management System (LMS) courses.
                                             - Do not provide any additional information or context not directly related to the question.
                                             - This includes teaching, learning, academic subjects, coursework, assignments, exams, quizzes, certifications, and LMS-delivered content.
@@ -59,6 +59,7 @@ public class ChatService {
 
 
         } catch (Exception e) {
+            System.out.println("ee" + e);
             throw new Exception("ERROR");
         }
     }

@@ -44,12 +44,12 @@ public class AuthController {
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
 
     @PostMapping("/register")
-    public ResponseEntity<Default> register(@Valid @RequestBody Register register){
-        try{
+    public ResponseEntity<Default> register(@Valid @RequestBody Register register) {
+        try {
             User username = userRepo.findByUsername(register.getUsername()).orElse(null);
             User email = userRepo.findByEmail(register.getEmail()).orElse(null);
 
-            if(username != null || email != null){
+            if (username != null || email != null) {
                 return new ResponseEntity<>(new Default("User Already Exists", false, null, null), HttpStatus.BAD_REQUEST);
             }
             User user = new User();
@@ -61,18 +61,17 @@ public class AuthController {
             user.setName(register.getName());
             userRepo.save(user);
             return ResponseEntity.ok(new Default("User Created Successfully", true, null, null));
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> register(@Valid @RequestBody Login login, HttpServletResponse response, HttpServletRequest request){
-        try{
+    public ResponseEntity<?> register(@Valid @RequestBody Login login, HttpServletResponse response, HttpServletRequest request) {
+        try {
             User isUserExist = userRepo.findByUsername(login.getUsername()).orElse(null);
 
-            if(isUserExist == null){
+            if (isUserExist == null) {
                 return new ResponseEntity<>(new Default("User Does Not Exists", false, null, null), HttpStatus.BAD_REQUEST);
             }
 
@@ -95,9 +94,9 @@ public class AuthController {
 
             Authentication auth = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(login.getUsername(), login.getPassword()));
 
-            if (auth.isAuthenticated()){
-                var token = jwtService.generateToken(isUserExist.getId(),request.getHeader("User-Agent"),request.getRemoteAddr());
-                var refreshToken = refreshTokenController.createRefreshToken(isUserExist, request.getRemoteAddr(),request.getHeader("User-Agent"));
+            if (auth.isAuthenticated()) {
+                var token = jwtService.generateToken(isUserExist.getId(), request.getHeader("User-Agent"), request.getRemoteAddr());
+                var refreshToken = refreshTokenController.createRefreshToken(isUserExist, request.getRemoteAddr(), request.getHeader("User-Agent"));
                 Cookie tokenCookie = this.setCookie("token", token, 60 * 60);
                 Cookie refreshCookie = this.setCookie("refresh", refreshToken, 60 * 60 * 24 * 30);
 
@@ -106,8 +105,7 @@ public class AuthController {
                 return ResponseEntity.ok(new LoginRes("User Login Successfully", true, token, refreshToken));
             }
             return new ResponseEntity<>(new Default("Invalid Credentials", false, null, null), HttpStatus.UNAUTHORIZED);
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -134,10 +132,11 @@ public class AuthController {
     private Cookie setCookie(String name, String value, int maxAge) {
         Cookie cookie = new Cookie(name, value);
         cookie.setPath("/");
-        cookie.setHttpOnly(false);
+        cookie.setHttpOnly(true);
         cookie.setMaxAge(maxAge);
+        cookie.setSecure(true);
         cookie.setAttribute("SameSite", "None");
-        cookie.setAttribute("Secure", "true");
+//        cookie.setAttribute("Secure", "true");
         return cookie;
     }
 

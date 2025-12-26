@@ -92,11 +92,11 @@ public class BlogCommentController {
                 return ResponseEntity.badRequest().body(new Default("Blog Not Found", false, null, null));
             }
 
-            Boolean isUserAlreadyCommented = blogCommentRepo.existsByBlogId_IdAndUserId_Id(blogComment.getBlogId(), user.getId());
-
-            if (isUserAlreadyCommented) {
-                return ResponseEntity.badRequest().body(new Default("User Already Commented", false, null, null));
-            }
+//            Boolean isUserAlreadyCommented = blogCommentRepo.existsByBlogId_IdAndUserId_Id(blogComment.getBlogId(), user.getId());
+//
+//            if (isUserAlreadyCommented) {
+//                return ResponseEntity.badRequest().body(new Default("User Already Commented", false, null, null));
+//            }
             BlogComment blogComment1 = new BlogComment();
             blogComment1.setBlog(blog);
             blogComment1.setUser(user);
