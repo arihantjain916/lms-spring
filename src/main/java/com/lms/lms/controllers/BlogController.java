@@ -8,9 +8,12 @@ import com.lms.lms.dto.response.Default;
 import com.lms.lms.dto.response.PaginatedResponse;
 import com.lms.lms.mappers.BlogMapper;
 import com.lms.lms.modals.Blog;
+import com.lms.lms.modals.BlogMeta;
 import com.lms.lms.modals.User;
+import com.lms.lms.repo.BlogMetaRepo;
 import com.lms.lms.repo.BlogRepo;
 import com.lms.lms.repo.UserRepo;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -23,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/blog")
@@ -39,6 +43,9 @@ public class BlogController {
 
     @Autowired
     private UserDetails userDetails;
+
+    @Autowired
+    private BlogMetaRepo blogMetaRepo;
 //    public User userDetails() {
 //        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 //        UserDetails user = (UserDetails) authentication.getPrincipal();
@@ -108,6 +115,7 @@ public class BlogController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
     @PostMapping("/add")
+    @Transactional
     public ResponseEntity<Default> save(@Valid @RequestBody BlogReq blogReq) {
         try {
             var isUserExist = userDetails.userDetails();
@@ -138,6 +146,24 @@ public class BlogController {
             blog.setCategory(blogReq.getCategory());
             blog.setImageUrl(blogReq.getImage_url());
             blogRepo.save(blog);
+
+            BlogMeta blogMeta = new BlogMeta();
+            blogMeta.setBlog(blog);
+            blogMeta.setLikes(Optional.of(blogReq.getBlogMeta().getLikes()).orElse(0L));
+            blogMeta.setFeatured(blogReq.getBlogMeta().getFeatured());
+            blogMeta.setIndexable(blogReq.getBlogMeta().getIndexable());
+            blogMeta.setFollowLinks(blogReq.getBlogMeta().getFollowLinks());
+            blogMeta.setOgDescription(blogReq.getBlogMeta().getOgDescription());
+            blogMeta.setOgTitle(blogReq.getBlogMeta().getOgTitle());
+            blogMeta.setOgImageUrl(blogReq.getBlogMeta().getOgImageUrl());
+            blogMeta.setSeoDescription(blogReq.getBlogMeta().getSeoDescription());
+            blogMeta.setSeoTitle(blogReq.getBlogMeta().getSeoTitle());
+            blogMeta.setShares(Optional.of(blogReq.getBlogMeta().getShares()).orElse(0L));
+            blogMeta.setViews(Optional.of(blogReq.getBlogMeta().getViews()).orElse(0L));
+
+
+            blogMetaRepo.save(blogMeta);
+
 
             return ResponseEntity.ok().body(new Default("Blog Added Successfully", true, null, null));
         } catch (Exception e) {

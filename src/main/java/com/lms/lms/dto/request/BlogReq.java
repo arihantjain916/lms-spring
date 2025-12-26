@@ -2,6 +2,7 @@ package com.lms.lms.dto.request;
 
 
 import com.lms.lms.modals.Blog;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -39,5 +40,9 @@ public class BlogReq {
 
     @NotBlank(message = "ImageUrl is required")
     private String image_url;
+
+    @Valid
+    @NotNull(message = "BlogMeta is required")
+    private BlogMetaReq blogMeta;
 
 }
