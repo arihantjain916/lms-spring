@@ -9,8 +9,12 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Date;
 import java.util.UUID;
@@ -32,12 +36,16 @@ public class RefreshTokenController {
             var Token = refreshTokenRepo.findByTokenOrderByCreatedAtDesc(token);
 
             if (Token == null) {
-                return ResponseEntity.badRequest().body(new Default("Invalid Token", false, null, null));
+                Cookie refreshCookie = this.deleteCookie();
+                response.addCookie(refreshCookie);
+                return new ResponseEntity<>(new Default("Invalid Token", false, null, null), HttpStatus.UNAUTHORIZED);
             }
             if (Token.getExpiresAt().before(new Date()) || !Token.getClient().equals(request.getHeader("User-Agent")) || !Token.getIpaddress().equals(request.getRemoteAddr())) {
-                return ResponseEntity.badRequest().body(new Default("Invalid Token", false, null, null));
+                Cookie refreshCookie = this.deleteCookie();
+                response.addCookie(refreshCookie);
+                return new ResponseEntity<>(new Default("Invalid Token", false, null, null), HttpStatus.UNAUTHORIZED);
             }
-            var newToken = jwtService.generateToken(Token.getUser().getId(),request.getHeader("User-Agent") ,request.getRemoteAddr());
+            var newToken = jwtService.generateToken(Token.getUser().getId(), request.getHeader("User-Agent"), request.getRemoteAddr());
 
             Cookie tokenCookie = this.setCookie(newToken, 60 * 60);
             response.addCookie(tokenCookie);
@@ -72,8 +80,22 @@ public class RefreshTokenController {
     private Cookie setCookie(String value, int maxAge) {
         Cookie cookie = new Cookie("token", value);
         cookie.setPath("/");
-        cookie.setHttpOnly(false);
+        cookie.setHttpOnly(true);
         cookie.setMaxAge(maxAge);
+        cookie.setSecure(true);
+        cookie.setAttribute("SameSite", "None");
+//        cookie.setAttribute("Secure", "true");
+        return cookie;
+    }
+
+    private Cookie deleteCookie() {
+        Cookie cookie = new Cookie("refresh", null);
+        cookie.setPath("/");
+        cookie.setHttpOnly(true);
+        cookie.setMaxAge(0);
+        cookie.setSecure(true);
+        cookie.setAttribute("SameSite", "None");
+//        cookie.setAttribute("Secure", "true");
         return cookie;
     }
 }
