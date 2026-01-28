@@ -22,17 +22,17 @@
 
 <body>
 
-<div>
     <div>
-        <label for="username">Username</label>
-        <input id="username" name="username" type="text" value="arihant@125">
+        <div>
+            <label for="username">Username</label>
+            <input id="username" name="username" type="text" value="arihant@125">
+        </div>
+        <div>
+            <label for="password">Password</label>
+            <input id="password" name="password" type="text" value="aarihant">
+        </div>
+        <button onclick="login()">Login</button>
     </div>
-    <div>
-        <label for="password">Password</label>
-        <input id="password" name="password" type="text" value="aarihant">
-    </div>
-    <button onclick="login()">Login</button>
-</div>
     <!-- Messages -->
     <div class="chat-container" id="chat">
         <div class="message assistant">
@@ -60,6 +60,9 @@
         const chat = document.getElementById("chat");
         const sendBtn = document.getElementById("sendBtn");
 
+        const host = "https://localhost:8080/api"
+        // const host = "http://localhost:8598/api"
+
         // Authorization
         // Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjFhOGYzOTQzLWFjYzctNDJkYS1hMDA3LTgzMDY2YmQzOWM1MiIsInVzZXJBZ2VudCI6IlBvc3RtYW5SdW50aW1lLzcuNTEuMCIsImlwQWRkcmVzcyI6IjA6MDowOjA6MDowOjA6MSIsInN1YiI6InVzZXIiLCJpYXQiOjE3NjY0MDE0MTUsImV4cCI6MTc2NjQ4NzgxNX0.qpO4O0QMACwYbJZ3Mamyhv75_iYDqQNwF6ytrYxHjzA
         // const stompClient = new StompJs.Client({
@@ -69,7 +72,7 @@
         let token = "eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjFhOGYzOTQzLWFjYzctNDJkYS1hMDA3LTgzMDY2YmQzOWM1MiIsInVzZXJBZ2VudCI6Ik1vemlsbGEvNS4wIChXaW5kb3dzIE5UIDEwLjA7IFdpbjY0OyB4NjQpIEFwcGxlV2ViS2l0LzUzNy4zNiAoS0hUTUwsIGxpa2UgR2Vja28pIENocm9tZS8xNDMuMC4wLjAgU2FmYXJpLzUzNy4zNiBFZGcvMTQzLjAuMC4wIiwiaXBBZGRyZXNzIjoiMDowOjA6MDowOjA6MDoxIiwic3ViIjoidXNlciIsImlhdCI6MTc2NjQ2NTM2NywiZXhwIjoxNzY2NTUxNzY3fQ.GuLc2Cx4gesgeVA9iW5ySjjesJ0uqN7eEJfg2eoL-Kg";
 
         const stompClient = new StompJs.Client({
-            webSocketFactory: () => new SockJS('http://localhost:8080/api/ws'),
+            webSocketFactory: () => new SockJS(`${host}/ws`),
         });
 
         stompClient.onConnect = (frame) => {
@@ -155,7 +158,7 @@
 
         async function fetchChats() {
             try {
-                const res = await axios.get("http://localhost:8080/api/chat", {
+                const res = await axios.get(`${host}/chat`, {
                     withCredentials: true,
                 })
 
@@ -184,7 +187,7 @@
                 username: document.getElementById("username").value,
                 password: document.getElementById("password").value
             }
-            const res = await axios.post("http://localhost:8080/api/auth/login", payload, { withCredentials: true, })
+            const res = await axios.post(`${host}/auth/login`, payload, { withCredentials: true, })
             token = res?.data?.token
 
             await fetchChats()
