@@ -43,6 +43,7 @@ services:
       CLOUDINARY_URL: ${CLOUDINARY_URL}
       JWT_SECRET: ${JWT_SECRET}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
+      CORS_ALLOWED_ORIGINS: https://lms.arihantjain.cv
     ports:
       - "8598:8080"
 

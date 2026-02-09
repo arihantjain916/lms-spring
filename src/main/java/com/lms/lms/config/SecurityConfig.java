@@ -5,6 +5,7 @@ import com.lms.lms.GlobalValue.PublicRoutes;
 import com.lms.lms.service.JwtFilter;
 import com.lms.lms.service.UserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -24,6 +25,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -48,6 +50,9 @@ public class SecurityConfig {
 
     @Autowired
     private PublicRoutes publicRoutes;
+
+    @Value("${cors.allowed-origins}")
+    private String allowedOrigins;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -89,10 +94,15 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000", "https://localhost:5173", "http://localhost:5500", "http://127.0.0.1:5500", "http://192.168.1.6:3002", "http://localhost:3002"));
+        config.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
+
+//        registry.addMapping("/**")
+//                .allowedOrigins(allowedOrigins.split(","))
+//                .allowedMethods("*")
+//                .allowedHeaders("*");
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
