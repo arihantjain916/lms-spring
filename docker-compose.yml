@@ -1,27 +1,62 @@
-#version: "3.9"
-#
-#services:
-#  db:
-#    image: postgres:16
-#    container_name: postgres_db
-#    restart: always
-#    environment:
-#      POSTGRES_USER: arihant
-#      POSTGRES_PASSWORD: arihant
-#      POSTGRES_DB: lms
-#    ports:
-#      - "5432:5432"
-#    volumes:
-#      - postgres_data:/var/lib/postgresql/data
-#
-#volumes:
-#  postgres_data:
+# #version: "3.9"
+# #
+# #services:
+# #  db:
+# #    image: postgres:16
+# #    container_name: postgres_db
+# #    restart: always
+# #    environment:
+# #      POSTGRES_USER: arihant
+# #      POSTGRES_PASSWORD: arihant
+# #      POSTGRES_DB: lms
+# #    ports:
+# #      - "5432:5432"
+# #    volumes:
+# #      - postgres_data:/var/lib/postgresql/data
+# #
+# #volumes:
+# #  postgres_data:
+
+# version: "3.9"
+
+# services:
+#   db:
+#     image: postgres:16
+#     environment:
+#       POSTGRES_USER: arihant
+#       POSTGRES_PASSWORD: arihant
+#       POSTGRES_DB: lms
+#     ports:
+#       - "5432:5432"
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+
+#   app:
+#     # build: .
+#     image: "arihantjain916/lms-spring"
+#     depends_on:
+#       - db
+#     environment:
+#       DB_URL: jdbc:postgresql://db:5432/lms
+#       DB_USER: arihant
+#       DB_PASSWORD: arihant
+#       CLOUDINARY_URL: ${CLOUDINARY_URL}
+#       JWT_SECRET: ${JWT_SECRET}
+#       GEMINI_API_KEY: ${GEMINI_API_KEY}
+#       CORS_ALLOWED_ORIGINS: https://lms.arihantjain.cv
+#       JAVA_OPTS=-Xms128m -Xmx300m
+#     ports:
+#       - "8598:8080"
+
+# volumes:
+#   postgres_data:
 
 version: "3.9"
 
 services:
   db:
     image: postgres:16
+    restart: always
     environment:
       POSTGRES_USER: arihant
       POSTGRES_PASSWORD: arihant
@@ -30,10 +65,16 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    command: >
+      postgres
+      -c shared_buffers=64MB
+      -c work_mem=4MB
+      -c maintenance_work_mem=32MB
+      -c max_connections=40
+    mem_limit: 200m
 
   app:
-    # build: .
-    image: "arihantjain916/lms-spring"
+    image: arihantjain916/lms-spring
     depends_on:
       - db
     environment:
@@ -44,9 +85,10 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       CORS_ALLOWED_ORIGINS: https://lms.arihantjain.cv
-      JAVA_OPTS=-Xms128m -Xmx300m
+      JAVA_OPTS: "-Xms128m -Xmx300m"
     ports:
       - "8598:8080"
+    mem_limit: 350m
 
 volumes:
   postgres_data:
