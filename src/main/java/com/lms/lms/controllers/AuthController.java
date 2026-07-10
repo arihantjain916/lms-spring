@@ -90,7 +90,8 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> register(@Valid @RequestBody Login login, HttpServletResponse response, HttpServletRequest request) {
         try {
-            User isUserExist = userRepo.findByUsername(login.getUsername()).orElse(null);
+            User isUserExist = userRepo.findByUsername(login.getUsername())
+                    .orElseGet(() -> userRepo.findByEmail(login.getUsername()).orElse(null));
 
             if (isUserExist == null) {
                 return new ResponseEntity<>(new Default("User Does Not Exists", false, null, null), HttpStatus.BAD_REQUEST);
@@ -113,13 +114,13 @@ public class AuthController {
             }
 
 
-            Authentication auth = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(login.getUsername(), login.getPassword()));
+            Authentication auth = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(isUserExist.getUsername(), login.getPassword()));
 
             if (auth.isAuthenticated()) {
                 var token = jwtService.generateToken(isUserExist.getId(), request.getHeader("User-Agent"), request.getRemoteAddr());
                 var refreshToken = refreshTokenController.createRefreshToken(isUserExist, request.getRemoteAddr(), request.getHeader("User-Agent"));
-                Cookie tokenCookie = this.setCookie("token", token, 60 * 60);
-                Cookie refreshCookie = this.setCookie("refresh", refreshToken, 60 * 60 * 24 * 30);
+                Cookie tokenCookie = this.setCookie("token", token, 60 * 60, request.isSecure());
+                Cookie refreshCookie = this.setCookie("refresh", refreshToken, 60 * 60 * 24 * 30, request.isSecure());
 
                 response.addCookie(tokenCookie);
                 response.addCookie(refreshCookie);
@@ -246,13 +247,13 @@ public class AuthController {
         return token.getToken();
     }
 
-    private Cookie setCookie(String name, String value, int maxAge) {
+    private Cookie setCookie(String name, String value, int maxAge, boolean secure) {
         Cookie cookie = new Cookie(name, value);
         cookie.setPath("/");
         cookie.setHttpOnly(true);
         cookie.setMaxAge(maxAge);
-        cookie.setSecure(true);
-        cookie.setAttribute("SameSite", "None");
+        cookie.setSecure(secure);
+        cookie.setAttribute("SameSite", secure ? "None" : "Lax");
 //        cookie.setAttribute("Secure", "true");
         return cookie;
     }

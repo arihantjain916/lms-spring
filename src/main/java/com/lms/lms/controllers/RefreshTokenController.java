@@ -47,7 +47,7 @@ public class RefreshTokenController {
             }
             var newToken = jwtService.generateToken(Token.getUser().getId(), request.getHeader("User-Agent"), request.getRemoteAddr());
 
-            Cookie tokenCookie = this.setCookie(newToken, 60 * 60);
+            Cookie tokenCookie = this.setCookie(newToken, 60 * 60, request.isSecure());
             response.addCookie(tokenCookie);
             return ResponseEntity.ok().body(new Default("Token Generated Successfully", true, null, newToken));
 
@@ -77,13 +77,13 @@ public class RefreshTokenController {
         }
     }
 
-    private Cookie setCookie(String value, int maxAge) {
+    private Cookie setCookie(String value, int maxAge, boolean secure) {
         Cookie cookie = new Cookie("token", value);
         cookie.setPath("/");
         cookie.setHttpOnly(true);
         cookie.setMaxAge(maxAge);
-        cookie.setSecure(true);
-        cookie.setAttribute("SameSite", "None");
+        cookie.setSecure(secure);
+        cookie.setAttribute("SameSite", secure ? "None" : "Lax");
 //        cookie.setAttribute("Secure", "true");
         return cookie;
     }

@@ -10,13 +10,25 @@ import java.util.List;
 public class PublicRoutes {
 
     public List<String> PUBLIC = List.of(
-            "/api/auth/**", "/api/health", "/api/test", "/api/contact/**", "/api/upload/**", "/api/ws/**", "/api/webhook/**"
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/auth/refresh",
+            "/api/auth/forgot-password",
+            "/api/auth/reset-password",
+            "/api/auth/verify-email",
+            "/api/auth/resend-verification",
+            "/api/health",
+            "/api/test",
+            "/api/contact/**",
+            "/api/upload/**",
+            "/api/ws/**",
+            "/api/webhook/**"
     );
 
 //    ,
 
     public List<String> OpenForGet = List.of(
-            "/api/course/**", "/api/category/**", "/api/ratings/**", "/api/blog/**", "/api/webhook/**"
+            "/api/course/**", "/api/courses/**", "/api/category/**", "/api/ratings/**", "/api/blog/**", "/api/webhook/**"
     );
 
     public String[] getPublicRoutes() {
