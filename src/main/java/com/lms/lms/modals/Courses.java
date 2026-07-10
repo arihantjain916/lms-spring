@@ -33,6 +33,9 @@ public class Courses {
     @Column(nullable = true)
     private Boolean isFeatured = false;
 
+    @Enumerated(value = EnumType.STRING)
+    private Level level;
+
     @ManyToOne
     @JoinColumn(name = "category_id",  nullable = false)
     private Category category;
@@ -52,4 +55,11 @@ public class Courses {
     @UpdateTimestamp
     private Date updatedAt = new Date();
     //to do add asset ids
+
+    public enum Level {
+        BEGINNER,
+        INTERMEDIATE,
+        ADVANCED,
+        ALL_LEVELS
+    }
 }

@@ -32,6 +32,8 @@ public class CourseRes {
 
     private Boolean isFeatured;
 
+    private String level;
+
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:mm")
     private LocalDateTime createdAt;
 

@@ -207,6 +207,9 @@ public class CourseController {
             course.setCategory(isCategoryExist);
             course.setUser(isUserExist);
             course.setIsFeatured(courses.getIsFeatured());
+            if (courses.getLevel() != null && !courses.getLevel().isBlank()) {
+                course.setLevel(Courses.Level.valueOf(courses.getLevel()));
+            }
             coursesRepo.save(course);
 
             return ResponseEntity.ok().body(new Default("Course Added Successfully", true, null, null));
@@ -243,6 +246,9 @@ public class CourseController {
             isCourseExist.setDescription(course.getDescription());
             isCourseExist.setCategory(isCategoryExist);
             isCategoryExist.setIsFeatured(course.getIsFeatured());
+            if (course.getLevel() != null && !course.getLevel().isBlank()) {
+                isCourseExist.setLevel(Courses.Level.valueOf(course.getLevel()));
+            }
             coursesRepo.save(isCourseExist);
 
             return ResponseEntity.ok().body(new Default("Course Updated Successfully", true, null, null));

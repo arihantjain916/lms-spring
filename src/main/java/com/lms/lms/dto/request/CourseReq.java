@@ -1,6 +1,7 @@
 package com.lms.lms.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -21,6 +22,9 @@ public class CourseReq {
     private String categoryId;
 
     private Boolean isFeatured;
+
+    @Pattern(regexp = "BEGINNER|INTERMEDIATE|ADVANCED|ALL_LEVELS", message = "Level must be one of BEGINNER, INTERMEDIATE, ADVANCED, ALL_LEVELS")
+    private String level;
 
     private Long id;
 

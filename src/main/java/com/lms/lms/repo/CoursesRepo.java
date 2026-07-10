@@ -28,5 +28,30 @@ public interface CoursesRepo extends JpaRepository<Courses, Long> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update Courses c set c.isFeatured = true where c.id in :ids")
     void markFeaturedByIds(@Param("ids") Collection<Long> ids);
+
+    @Query("""
+            SELECT c FROM Courses c
+            WHERE (:q IS NULL OR lower(c.title) LIKE lower(concat('%', :q, '%')) OR lower(c.description) LIKE lower(concat('%', :q, '%')))
+              AND (:categoryId IS NULL OR c.category.id = :categoryId)
+              AND (:level IS NULL OR c.level = :level)
+              AND (:featured IS NULL OR c.isFeatured = :featured)
+              AND (:minRating IS NULL OR (SELECT AVG(r.rating) FROM Ratings r WHERE r.course.id = c.id) >= :minRating)
+              AND (:price IS NULL
+                   OR (:price = 'free' AND COALESCE((SELECT MIN(p.price) FROM Pricing_Plans p WHERE p.courses.id = c.id), 0) = 0)
+                   OR (:price = 'paid' AND COALESCE((SELECT MIN(p.price) FROM Pricing_Plans p WHERE p.courses.id = c.id), 0) > 0))
+              AND (:maxPrice IS NULL OR COALESCE((SELECT MIN(p.price) FROM Pricing_Plans p WHERE p.courses.id = c.id), 0) <= :maxPrice)
+            """)
+    Page<Courses> searchCourses(@Param("q") String q,
+                                @Param("categoryId") String categoryId,
+                                @Param("level") Courses.Level level,
+                                @Param("featured") Boolean featured,
+                                @Param("minRating") Double minRating,
+                                @Param("price") String price,
+                                @Param("maxPrice") Double maxPrice,
+                                Pageable pageable);
+
+    Page<Courses> findByCategoryIdAndIdNot(String categoryId, Long id, Pageable pageable);
+
+    Page<Courses> findByIsFeaturedTrue(Pageable pageable);
 }
 

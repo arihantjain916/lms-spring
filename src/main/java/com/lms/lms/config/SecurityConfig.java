@@ -67,7 +67,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(req -> req
 //                        "/ws/**"
                         .requestMatchers("/auth/**", "/health", "/test", "/contact/**", "/upload/**", "/ws/**", "/webhook/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/course/**", "/category/**", "/ratings/**", "/blog/**", "/webhook/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/course/**", "/courses/**", "/category/**", "/ratings/**", "/blog/**", "/webhook/**").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex.accessDeniedHandler(customAccessDeniedHandler)
                         .authenticationEntryPoint(customAuthenticationEntryPoint)
