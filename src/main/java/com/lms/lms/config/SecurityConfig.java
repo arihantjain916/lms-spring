@@ -66,8 +66,8 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(req -> req
 //                        "/ws/**"
-                        .requestMatchers("/auth/**", "/health", "/test", "/contact/**", "/upload/**", "/ws/**", "/webhook/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/course/**", "/courses/**", "/category/**", "/ratings/**", "/blog/**", "/webhook/**").permitAll()
+                        .requestMatchers("/auth/**", "/health", "/test", "/contact/**", "/upload/**", "/ws/**", "/webhook/**", "/payments/webhook").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/course/**", "/courses/**", "/category/**", "/ratings/**", "/blog/**", "/webhook/**", "/certificates/**").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex.accessDeniedHandler(customAccessDeniedHandler)
                         .authenticationEntryPoint(customAuthenticationEntryPoint)

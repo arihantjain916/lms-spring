@@ -2,6 +2,8 @@ package com.lms.lms.controllers;
 
 import com.lms.lms.GlobalValue.UserDetails;
 import com.lms.lms.dto.request.CourseReviewReq;
+import com.lms.lms.dto.response.CertificateRes;
+import com.lms.lms.dto.response.CourseProgressRes;
 import com.lms.lms.dto.response.CourseRes;
 import com.lms.lms.dto.response.Default;
 import com.lms.lms.dto.response.InstructorRes;
@@ -11,14 +13,17 @@ import com.lms.lms.dto.response.RatingRes;
 import com.lms.lms.mappers.CourseMapper;
 import com.lms.lms.mappers.LessonMapper;
 import com.lms.lms.mappers.RatingMapper;
+import com.lms.lms.modals.Certificate;
 import com.lms.lms.modals.Courses;
 import com.lms.lms.modals.Enrollment;
 import com.lms.lms.modals.Lesson;
 import com.lms.lms.modals.Ratings;
 import com.lms.lms.modals.Review;
 import com.lms.lms.modals.User;
+import com.lms.lms.repo.CertificateRepo;
 import com.lms.lms.repo.CoursesRepo;
 import com.lms.lms.repo.EnrollmentRepo;
+import com.lms.lms.repo.LessonProgressRepo;
 import com.lms.lms.repo.LessonRepo;
 import com.lms.lms.repo.PricingRepo;
 import com.lms.lms.repo.RatingRepo;
@@ -30,10 +35,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/courses")
@@ -65,6 +73,12 @@ public class CoursesController {
 
     @Autowired
     private EnrollmentRepo enrollmentRepo;
+
+    @Autowired
+    private LessonProgressRepo lessonProgressRepo;
+
+    @Autowired
+    private CertificateRepo certificateRepo;
 
     @Autowired
     private UserDetails userDetails;
@@ -360,6 +374,87 @@ public class CoursesController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'STUDENT', 'INSTRUCTOR')")
+    @GetMapping("/{courseId}/progress")
+    public ResponseEntity<Default> getCourseProgress(@PathVariable Long courseId) {
+        try {
+            Courses course = coursesRepo.findById(courseId).orElse(null);
+            if (course == null) {
+                return ResponseEntity.badRequest().body(new Default("Course Not Found", false, null, null));
+            }
+
+            User user = userDetails.userDetails();
+            if (user == null || user.getIsDeleted()) {
+                return ResponseEntity.badRequest().body(new Default("User Not Found", false, null, null));
+            }
+
+            Boolean isUserEnrolled = enrollmentRepo.existsByUser_IdAndCourses_Id(user.getId(), courseId);
+            if (!isUserEnrolled && user.getRole() != User.Role.ADMIN) {
+                return new ResponseEntity<>(new Default("User Is Not Enrolled In This Course", false, null, null), HttpStatus.FORBIDDEN);
+            }
+
+            Integer totalLessons = lessonRepo.countByCourses_Id(courseId);
+            Integer completedLessons = lessonProgressRepo.countByUser_IdAndLesson_Courses_IdAndIsCompletedTrue(user.getId(), courseId);
+            double percent = totalLessons > 0 ? (completedLessons * 100.0) / totalLessons : 0.0;
+
+            CourseProgressRes res = new CourseProgressRes(courseId, totalLessons, completedLessons, percent, totalLessons > 0 && completedLessons.equals(totalLessons));
+            return ResponseEntity.ok(new Default("Course Progress Fetched Successfully", true, null, res));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    @PostMapping("/{courseId}/certificate")
+    public ResponseEntity<Default> issueCertificate(@PathVariable Long courseId) {
+        try {
+            Courses course = coursesRepo.findById(courseId).orElse(null);
+            if (course == null) {
+                return ResponseEntity.badRequest().body(new Default("Course Not Found", false, null, null));
+            }
+
+            User user = userDetails.userDetails();
+            if (user == null || user.getIsDeleted()) {
+                return ResponseEntity.badRequest().body(new Default("User Not Found", false, null, null));
+            }
+
+            Boolean isUserEnrolled = enrollmentRepo.existsByUser_IdAndCourses_Id(user.getId(), courseId);
+            if (!isUserEnrolled) {
+                return new ResponseEntity<>(new Default("User Is Not Enrolled In This Course", false, null, null), HttpStatus.FORBIDDEN);
+            }
+
+            Certificate existing = certificateRepo.findByUser_IdAndCourse_Id(user.getId(), courseId).orElse(null);
+            if (existing != null) {
+                return ResponseEntity.ok(new Default("Certificate Already Issued", true, null, this.toCertificateRes(existing)));
+            }
+
+            Integer totalLessons = lessonRepo.countByCourses_Id(courseId);
+            Integer completedLessons = lessonProgressRepo.countByUser_IdAndLesson_Courses_IdAndIsCompletedTrue(user.getId(), courseId);
+            if (totalLessons == 0 || !completedLessons.equals(totalLessons)) {
+                return ResponseEntity.badRequest().body(new Default("Course Is Not Completed Yet", false, null, null));
+            }
+
+            Certificate certificate = new Certificate();
+            certificate.setUser(user);
+            certificate.setCourse(course);
+            certificate.setCertificateNumber("CERT-" + courseId + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+            certificateRepo.save(certificate);
+
+            return ResponseEntity.ok(new Default("Certificate Issued Successfully", true, null, this.toCertificateRes(certificate)));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    private CertificateRes toCertificateRes(Certificate certificate) {
+        return new CertificateRes(
+                certificate.getId(),
+                certificate.getCertificateNumber(),
+                certificate.getUser().getName(),
+                certificate.getCourse().getTitle(),
+                certificate.getIssuedAt()
+        );
     }
 
     private CourseRes toCourseRes(Courses course) {
