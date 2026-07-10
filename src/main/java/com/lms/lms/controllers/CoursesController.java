@@ -12,15 +12,18 @@ import com.lms.lms.mappers.CourseMapper;
 import com.lms.lms.mappers.LessonMapper;
 import com.lms.lms.mappers.RatingMapper;
 import com.lms.lms.modals.Courses;
+import com.lms.lms.modals.Enrollment;
 import com.lms.lms.modals.Lesson;
 import com.lms.lms.modals.Ratings;
 import com.lms.lms.modals.Review;
 import com.lms.lms.modals.User;
 import com.lms.lms.repo.CoursesRepo;
+import com.lms.lms.repo.EnrollmentRepo;
 import com.lms.lms.repo.LessonRepo;
 import com.lms.lms.repo.PricingRepo;
 import com.lms.lms.repo.RatingRepo;
 import com.lms.lms.repo.ReviewRepo;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -59,6 +62,9 @@ public class CoursesController {
 
     @Autowired
     private RatingMapper ratingMapper;
+
+    @Autowired
+    private EnrollmentRepo enrollmentRepo;
 
     @Autowired
     private UserDetails userDetails;
@@ -296,6 +302,61 @@ public class CoursesController {
                     .map(this::toCourseRes)
                     .toList();
             return ResponseEntity.ok().body(new Default("Related Courses Fetched Successfully", true, null, related));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    @PostMapping("/{courseId}/enrollments")
+    public ResponseEntity<Default> enrollInCourse(@PathVariable Long courseId) {
+        try {
+            Courses course = coursesRepo.findById(courseId).orElse(null);
+            if (course == null) {
+                return ResponseEntity.badRequest().body(new Default("Course Not Found", false, null, null));
+            }
+
+            User user = userDetails.userDetails();
+            if (user == null || user.getIsDeleted()) {
+                return ResponseEntity.badRequest().body(new Default("User Not Found", false, null, null));
+            }
+
+            Boolean isUserAlreadyEnrolled = enrollmentRepo.existsByUser_IdAndCourses_Id(user.getId(), courseId);
+            if (isUserAlreadyEnrolled) {
+                return ResponseEntity.badRequest().body(new Default("User Already Enrolled", false, null, null));
+            }
+
+            Enrollment enrollment = new Enrollment();
+            enrollment.setCourses(course);
+            enrollment.setUser(user);
+            enrollmentRepo.save(enrollment);
+
+            return ResponseEntity.ok().body(new Default("Student Enrolled Successfully", true, null, null));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    @DeleteMapping("/{courseId}/enrollments")
+    @Transactional
+    public ResponseEntity<Default> unenrollFromCourse(@PathVariable Long courseId) {
+        try {
+            Courses course = coursesRepo.findById(courseId).orElse(null);
+            if (course == null) {
+                return ResponseEntity.badRequest().body(new Default("Course Not Found", false, null, null));
+            }
+
+            User user = userDetails.userDetails();
+            if (user == null || user.getIsDeleted()) {
+                return ResponseEntity.badRequest().body(new Default("User Not Found", false, null, null));
+            }
+
+            Boolean isUserEnrolled = enrollmentRepo.existsByUser_IdAndCourses_Id(user.getId(), courseId);
+            if (!isUserEnrolled) {
+                return ResponseEntity.badRequest().body(new Default("User Is Not Enrolled", false, null, null));
+            }
+
+            enrollmentRepo.deleteByUser_IdAndCourses_Id(user.getId(), courseId);
+            return ResponseEntity.ok().body(new Default("Student Unenrolled Successfully", true, null, null));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }

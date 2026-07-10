@@ -5,15 +5,34 @@ import com.cloudinary.utils.ObjectUtils;
 import com.lms.lms.GlobalValue.UserDetails;
 import com.lms.lms.dto.request.UpdatePasswordReq;
 import com.lms.lms.dto.request.UpdateUserReq;
+import com.lms.lms.dto.response.CourseRes;
 import com.lms.lms.dto.response.Default;
+import com.lms.lms.dto.response.EnrollmentDetailsRes;
 import com.lms.lms.dto.response.MeRes;
+import com.lms.lms.dto.response.PaginatedResponse;
+import com.lms.lms.mappers.CourseMapper;
+import com.lms.lms.dto.response.WishlistRes;
+import com.lms.lms.modals.Courses;
+import com.lms.lms.modals.Enrollment;
+import com.lms.lms.modals.Review;
 import com.lms.lms.modals.User;
+import com.lms.lms.modals.Wishlist;
+import com.lms.lms.repo.CoursesRepo;
+import com.lms.lms.repo.EnrollmentRepo;
+import com.lms.lms.repo.PricingRepo;
+import com.lms.lms.repo.RatingRepo;
+import com.lms.lms.repo.ReviewRepo;
 import com.lms.lms.repo.UserRepo;
+import com.lms.lms.repo.WishlistRepo;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -39,6 +58,27 @@ public class UserController {
 
     @Autowired
     private Cloudinary cloudinary;
+
+    @Autowired
+    private EnrollmentRepo enrollmentRepo;
+
+    @Autowired
+    private WishlistRepo wishlistRepo;
+
+    @Autowired
+    private CoursesRepo coursesRepo;
+
+    @Autowired
+    private PricingRepo pricingRepo;
+
+    @Autowired
+    private RatingRepo ratingRepo;
+
+    @Autowired
+    private ReviewRepo reviewRepo;
+
+    @Autowired
+    private CourseMapper courseMapper;
 
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
 
@@ -146,6 +186,166 @@ public class UserController {
         } catch (Exception e) {
             return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'STUDENT', 'INSTRUCTOR')")
+    @GetMapping("/me/enrollments")
+    public ResponseEntity<?> getMyEnrollments(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        try {
+            User user = userDetails.userDetails();
+            if (user == null || user.getIsDeleted()) {
+                return new ResponseEntity<>(new Default("User Does Not Exists", false, null, null), HttpStatus.NOT_FOUND);
+            }
+
+            int pageNumber = page > 0 ? page - 1 : 0;
+            Pageable pageable = PageRequest.of(pageNumber, limit, Sort.by("enrolledAt").descending());
+
+            Page<Enrollment> enrollments = enrollmentRepo.findByUser_Id(user.getId(), pageable);
+            List<EnrollmentDetailsRes> enrollmentList = enrollments
+                    .stream()
+                    .map(enrollment -> new EnrollmentDetailsRes(enrollment.getId(), enrollment.getEnrolledAt(), this.toCourseRes(enrollment.getCourses())))
+                    .toList();
+
+            PaginatedResponse<EnrollmentDetailsRes> paginatedResponse = new PaginatedResponse<>(
+                    "Enrollments Fetched Successfully",
+                    true,
+                    enrollmentList,
+                    enrollments.getNumber() + 1,
+                    enrollments.getSize(),
+                    enrollments.getTotalElements(),
+                    enrollments.getTotalPages()
+            );
+            return ResponseEntity.ok().body(paginatedResponse);
+        } catch (Exception e) {
+            return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'STUDENT', 'INSTRUCTOR')")
+    @GetMapping("/me/enrollments/{courseId}")
+    public ResponseEntity<Default> getMyEnrollmentForCourse(@PathVariable Long courseId) {
+        try {
+            User user = userDetails.userDetails();
+            if (user == null || user.getIsDeleted()) {
+                return new ResponseEntity<>(new Default("User Does Not Exists", false, null, null), HttpStatus.NOT_FOUND);
+            }
+
+            Enrollment enrollment = enrollmentRepo.findByUser_IdAndCourses_Id(user.getId(), courseId).orElse(null);
+            if (enrollment == null) {
+                return new ResponseEntity<>(new Default("Enrollment Not Found", false, null, null), HttpStatus.NOT_FOUND);
+            }
+
+            EnrollmentDetailsRes res = new EnrollmentDetailsRes(enrollment.getId(), enrollment.getEnrolledAt(), this.toCourseRes(enrollment.getCourses()));
+            return ResponseEntity.ok(new Default("Enrollment Fetched Successfully", true, null, res));
+        } catch (Exception e) {
+            return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'STUDENT', 'INSTRUCTOR')")
+    @PostMapping("/me/wishlist/{courseId}")
+    public ResponseEntity<Default> addToWishlist(@PathVariable Long courseId) {
+        try {
+            User user = userDetails.userDetails();
+            if (user == null || user.getIsDeleted()) {
+                return new ResponseEntity<>(new Default("User Does Not Exists", false, null, null), HttpStatus.NOT_FOUND);
+            }
+
+            Courses course = coursesRepo.findById(courseId).orElse(null);
+            if (course == null) {
+                return new ResponseEntity<>(new Default("Course Not Found", false, null, null), HttpStatus.BAD_REQUEST);
+            }
+
+            Boolean isAlreadyWishlisted = wishlistRepo.existsByUser_IdAndCourses_Id(user.getId(), courseId);
+            if (isAlreadyWishlisted) {
+                return new ResponseEntity<>(new Default("Course Already In Wishlist", false, null, null), HttpStatus.BAD_REQUEST);
+            }
+
+            Wishlist wishlist = new Wishlist();
+            wishlist.setCourses(course);
+            wishlist.setUser(user);
+            wishlistRepo.save(wishlist);
+
+            return ResponseEntity.ok(new Default("Course Added To Wishlist Successfully", true, null, null));
+        } catch (Exception e) {
+            return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'STUDENT', 'INSTRUCTOR')")
+    @DeleteMapping("/me/wishlist/{courseId}")
+    @Transactional
+    public ResponseEntity<Default> removeFromWishlist(@PathVariable Long courseId) {
+        try {
+            User user = userDetails.userDetails();
+            if (user == null || user.getIsDeleted()) {
+                return new ResponseEntity<>(new Default("User Does Not Exists", false, null, null), HttpStatus.NOT_FOUND);
+            }
+
+            Boolean isWishlisted = wishlistRepo.existsByUser_IdAndCourses_Id(user.getId(), courseId);
+            if (!isWishlisted) {
+                return new ResponseEntity<>(new Default("Course Is Not In Wishlist", false, null, null), HttpStatus.BAD_REQUEST);
+            }
+
+            wishlistRepo.deleteByUser_IdAndCourses_Id(user.getId(), courseId);
+            return ResponseEntity.ok(new Default("Course Removed From Wishlist Successfully", true, null, null));
+        } catch (Exception e) {
+            return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'STUDENT', 'INSTRUCTOR')")
+    @GetMapping("/me/wishlist")
+    public ResponseEntity<?> getMyWishlist(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        try {
+            User user = userDetails.userDetails();
+            if (user == null || user.getIsDeleted()) {
+                return new ResponseEntity<>(new Default("User Does Not Exists", false, null, null), HttpStatus.NOT_FOUND);
+            }
+
+            int pageNumber = page > 0 ? page - 1 : 0;
+            Pageable pageable = PageRequest.of(pageNumber, limit, Sort.by("addedAt").descending());
+
+            Page<Wishlist> wishlist = wishlistRepo.findByUser_Id(user.getId(), pageable);
+            List<WishlistRes> wishlistItems = wishlist
+                    .stream()
+                    .map(item -> new WishlistRes(item.getId(), item.getAddedAt(), this.toCourseRes(item.getCourses())))
+                    .toList();
+
+            PaginatedResponse<WishlistRes> paginatedResponse = new PaginatedResponse<>(
+                    "Wishlist Fetched Successfully",
+                    true,
+                    wishlistItems,
+                    wishlist.getNumber() + 1,
+                    wishlist.getSize(),
+                    wishlist.getTotalElements(),
+                    wishlist.getTotalPages()
+            );
+            return ResponseEntity.ok().body(paginatedResponse);
+        } catch (Exception e) {
+            return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private CourseRes toCourseRes(Courses course) {
+        CourseRes dto = courseMapper.toDto(course);
+        Double price = pricingRepo.getMinPlanPriceByCourseId(course.getId());
+        Double avgRating = ratingRepo.avgRatingOfCourse(course.getId());
+        Integer totalRating = ratingRepo.totalRatingofCourse(course.getId());
+        Integer upCount = reviewRepo.countReviewByCourseIdAndVoteType(course.getId(), Review.VoteType.UPVOTE);
+        Integer downCount = reviewRepo.countReviewByCourseIdAndVoteType(course.getId(), Review.VoteType.DOWNVOTE);
+        dto.setPrice(price);
+        dto.setAvgRating(avgRating);
+        dto.setTotalRating(totalRating);
+        dto.setUpvote(upCount);
+        dto.setDownvote(downCount);
+        return dto;
     }
 
     private Cookie deleteCookie(String name) {
