@@ -53,5 +53,35 @@ public interface CoursesRepo extends JpaRepository<Courses, Long> {
     Page<Courses> findByCategoryIdAndIdNot(String categoryId, Long id, Pageable pageable);
 
     Page<Courses> findByIsFeaturedTrue(Pageable pageable);
+
+    List<Courses> findTop5ByTitleContainingIgnoreCase(String title);
+
+    @Query("""
+            SELECT c FROM Courses c
+            WHERE (:q IS NULL OR lower(c.title) LIKE lower(concat('%', :q, '%')) OR lower(c.description) LIKE lower(concat('%', :q, '%')))
+              AND (:hasCategories = false OR c.category.id IN :categoryIds)
+              AND (:hasLevels = false OR c.level IN :levels)
+            """)
+    Page<Courses> searchCatalog(@Param("q") String q,
+                                @Param("hasCategories") boolean hasCategories,
+                                @Param("categoryIds") List<String> categoryIds,
+                                @Param("hasLevels") boolean hasLevels,
+                                @Param("levels") List<Courses.Level> levels,
+                                Pageable pageable);
+
+    @Query("""
+            SELECT c.category.id, c.category.name, COUNT(c) FROM Courses c
+            WHERE (:q IS NULL OR lower(c.title) LIKE lower(concat('%', :q, '%')) OR lower(c.description) LIKE lower(concat('%', :q, '%')))
+            GROUP BY c.category.id, c.category.name
+            """)
+    List<Object[]> countByCategoryForSearch(@Param("q") String q);
+
+    @Query("""
+            SELECT c.level, COUNT(c) FROM Courses c
+            WHERE c.level IS NOT NULL
+              AND (:q IS NULL OR lower(c.title) LIKE lower(concat('%', :q, '%')) OR lower(c.description) LIKE lower(concat('%', :q, '%')))
+            GROUP BY c.level
+            """)
+    List<Object[]> countByLevelForSearch(@Param("q") String q);
 }
 

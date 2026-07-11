@@ -35,4 +35,13 @@ public interface BlogRepo extends JpaRepository<Blog, String> {
 
     @Query("SELECT b FROM Blog b WHERE b.title = :title")
     Optional<Blog> findByTitle(@Param("title") String title);
+
+    List<Blog> findTop5ByTitleContainingIgnoreCaseAndStatus(String title, Blog.Staus status);
+
+    @Query("""
+            SELECT b FROM Blog b
+            WHERE b.status = :status
+              AND (:q IS NULL OR lower(b.title) LIKE lower(concat('%', :q, '%')) OR lower(b.description) LIKE lower(concat('%', :q, '%')))
+            """)
+    Page<Blog> searchCatalog(@Param("q") String q, @Param("status") Blog.Staus status, Pageable pageable);
 }

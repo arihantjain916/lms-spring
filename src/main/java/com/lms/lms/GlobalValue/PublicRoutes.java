@@ -22,13 +22,27 @@ public class PublicRoutes {
             "/api/contact/**",
             "/api/upload/**",
             "/api/ws/**",
-            "/api/webhook/**"
+            "/api/webhook/**",
+            "/api/payments/webhook",
+            "/api/certificates/**"
     );
 
 //    ,
 
     public List<String> OpenForGet = List.of(
-            "/api/course/**", "/api/courses/**", "/api/category/**", "/api/ratings/**", "/api/blog/**", "/api/webhook/**"
+            "/api/course/**",
+            "/api/courses",
+            "/api/courses/featured",
+            "/api/courses/*",
+            "/api/courses/*/curriculum",
+            "/api/courses/*/instructor",
+            "/api/courses/*/reviews",
+            "/api/courses/*/related",
+            "/api/category/**",
+            "/api/ratings/**",
+            "/api/blog/**",
+            "/api/webhook/**",
+            "/api/questions/**"
     );
 
     public String[] getPublicRoutes() {
