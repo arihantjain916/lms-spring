@@ -77,7 +77,8 @@ public class AuthController {
             user.setEmail(register.getEmail());
             user.setPassword(pass);
             user.setName(register.getName());
-            userRepo.save(user);
+            // flush so constraint violations surface here, before any email goes out
+            userRepo.saveAndFlush(user);
 
             String token = createVerificationToken(user, VerificationToken.TokenType.EMAIL_VERIFICATION, 1000L * 60 * 60 * 24);
             emailService.sendVerificationEmail(user.getEmail(), token);
