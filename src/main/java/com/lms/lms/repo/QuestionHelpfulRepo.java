@@ -12,4 +12,6 @@ public interface QuestionHelpfulRepo extends JpaRepository<QuestionHelpful, Stri
     Integer countByQuestion_Id(String questionId);
 
     int deleteByQuestion_Id(String questionId);
+
+    int deleteByUser_Id(String userId);
 }

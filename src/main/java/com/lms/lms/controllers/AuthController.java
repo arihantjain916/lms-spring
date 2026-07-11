@@ -134,18 +134,17 @@ public class AuthController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'STUDENT', 'INSTRUCTOR')")
     @PostMapping("/logout")
-    public ResponseEntity<Default> logout(HttpServletResponse response) {
+    public ResponseEntity<Default> logout(HttpServletResponse response, HttpServletRequest request) {
         try {
-            Boolean isDelete = refreshTokenController.deleteRefreshToken(userDetails.userDetails());
-            if (isDelete) {
-                Cookie tokenCookie = this.deleteCookie("token");
-                Cookie refreshCookie = this.deleteCookie("refresh");
+            refreshTokenController.deleteRefreshToken(userDetails.userDetails());
 
-                response.addCookie(tokenCookie);
-                response.addCookie(refreshCookie);
-                return new ResponseEntity<>(new Default("User Logout Successfully", true, null, null), HttpStatus.OK);
-            }
-            return new ResponseEntity<>(new Default("User Logout Failed", false, null, null), HttpStatus.BAD_REQUEST);
+            // always clear the cookies, even if no refresh token rows were found
+            Cookie tokenCookie = this.deleteCookie("token", request.isSecure());
+            Cookie refreshCookie = this.deleteCookie("refresh", request.isSecure());
+
+            response.addCookie(tokenCookie);
+            response.addCookie(refreshCookie);
+            return new ResponseEntity<>(new Default("User Logout Successfully", true, null, null), HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -271,11 +270,14 @@ public class AuthController {
         return cookie;
     }
 
-    private Cookie deleteCookie(String name) {
+    private Cookie deleteCookie(String name, boolean secure) {
+        // must mirror the attributes used when setting, otherwise browsers ignore the deletion
         Cookie cookie = new Cookie(name, null);
         cookie.setPath("/");
-        cookie.setHttpOnly(false);
+        cookie.setHttpOnly(true);
         cookie.setMaxAge(0);
+        cookie.setSecure(secure);
+        cookie.setAttribute("SameSite", secure ? "None" : "Lax");
         return cookie;
     }
 }

@@ -19,12 +19,17 @@ import com.lms.lms.modals.User;
 import com.lms.lms.modals.Wishlist;
 import com.lms.lms.repo.CoursesRepo;
 import com.lms.lms.repo.EnrollmentRepo;
+import com.lms.lms.repo.LessonProgressRepo;
 import com.lms.lms.repo.PricingRepo;
+import com.lms.lms.repo.QuestionHelpfulRepo;
 import com.lms.lms.repo.RatingRepo;
 import com.lms.lms.repo.ReviewRepo;
 import com.lms.lms.repo.UserRepo;
+import com.lms.lms.repo.VerificationTokenRepo;
+import com.lms.lms.repo.WebinarRegistrationRepo;
 import com.lms.lms.repo.WishlistRepo;
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
@@ -79,6 +84,18 @@ public class UserController {
 
     @Autowired
     private CourseMapper courseMapper;
+
+    @Autowired
+    private VerificationTokenRepo verificationTokenRepo;
+
+    @Autowired
+    private LessonProgressRepo lessonProgressRepo;
+
+    @Autowired
+    private WebinarRegistrationRepo webinarRegistrationRepo;
+
+    @Autowired
+    private QuestionHelpfulRepo questionHelpfulRepo;
 
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
 
@@ -168,20 +185,37 @@ public class UserController {
     @PreAuthorize("hasAnyRole('ADMIN', 'STUDENT', 'INSTRUCTOR')")
     @DeleteMapping("/me")
     @Transactional
-    public ResponseEntity<Default> deleteMe(HttpServletResponse response) {
+    public ResponseEntity<Default> deleteMe(HttpServletResponse response, HttpServletRequest request) {
         try {
             User user = userDetails.userDetails();
             if (user == null || user.getIsDeleted()) {
                 return new ResponseEntity<>(new Default("User Does Not Exists", false, null, null), HttpStatus.NOT_FOUND);
             }
 
+            // anonymize PII so the account is unrecoverable and the email/username become free again
+            String anonymousId = java.util.UUID.randomUUID().toString().substring(0, 8);
+            user.setName("deleted-user-" + anonymousId);
+            user.setUsername("deleted-" + anonymousId);
+            user.setEmail("deleted-" + anonymousId + "@deleted.local");
+            user.setPassword(encoder.encode(java.util.UUID.randomUUID().toString()));
+            user.setAvatar(null);
+            user.setIsVerified(false);
             user.setIsDeleted(true);
             user.setIsActive(false);
             userRepo.save(user);
-            refreshTokenController.deleteRefreshToken(user);
 
-            response.addCookie(this.deleteCookie("token"));
-            response.addCookie(this.deleteCookie("refresh"));
+            // purge personal artifacts; content that other data depends on (payments, reviews,
+            // questions, certificates, authored courses) stays attached to the anonymized user
+            refreshTokenController.deleteRefreshToken(user);
+            verificationTokenRepo.deleteByUser(user);
+            wishlistRepo.deleteByUser_Id(user.getId());
+            enrollmentRepo.deleteByUser_Id(user.getId());
+            lessonProgressRepo.deleteByUser_Id(user.getId());
+            webinarRegistrationRepo.deleteByUser_Id(user.getId());
+            questionHelpfulRepo.deleteByUser_Id(user.getId());
+
+            response.addCookie(this.deleteCookie("token", request.isSecure()));
+            response.addCookie(this.deleteCookie("refresh", request.isSecure()));
             return ResponseEntity.ok(new Default("User Deleted Successfully", true, null, null));
         } catch (Exception e) {
             return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -348,13 +382,14 @@ public class UserController {
         return dto;
     }
 
-    private Cookie deleteCookie(String name) {
+    private Cookie deleteCookie(String name, boolean secure) {
+        // must mirror the attributes used when setting, otherwise browsers ignore the deletion
         Cookie cookie = new Cookie(name, null);
         cookie.setPath("/");
         cookie.setHttpOnly(true);
         cookie.setMaxAge(0);
-        cookie.setSecure(true);
-        cookie.setAttribute("SameSite", "None");
+        cookie.setSecure(secure);
+        cookie.setAttribute("SameSite", secure ? "None" : "Lax");
         return cookie;
     }
 }

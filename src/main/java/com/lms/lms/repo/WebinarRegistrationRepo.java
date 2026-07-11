@@ -14,4 +14,6 @@ public interface WebinarRegistrationRepo extends JpaRepository<WebinarRegistrati
     Page<WebinarRegistration> findByUser_Id(String userId, Pageable pageable);
 
     Integer countByWebinar_Id(String webinarId);
+
+    int deleteByUser_Id(String userId);
 }

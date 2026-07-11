@@ -13,4 +13,6 @@ public interface LessonProgressRepo extends JpaRepository<LessonProgress, String
     List<LessonProgress> findByUser_IdAndLesson_Courses_Id(String userId, Long courseId);
 
     Integer countByUser_IdAndLesson_Courses_IdAndIsCompletedTrue(String userId, Long courseId);
+
+    int deleteByUser_Id(String userId);
 }

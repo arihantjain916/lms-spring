@@ -16,6 +16,8 @@ public interface EnrollmentRepo extends JpaRepository<Enrollment, String> {
     void deleteByUser_IdAndCourses_Id(String userId, Long courseId);
 
     Page<Enrollment> findByUser_Id(String userId, Pageable page);
+
+    int deleteByUser_Id(String userId);
 //
 //    List<Enrollment> findByCourses_Id(Long courseId);
 }

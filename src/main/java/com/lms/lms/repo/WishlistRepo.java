@@ -12,4 +12,6 @@ public interface WishlistRepo extends JpaRepository<Wishlist, String> {
     void deleteByUser_IdAndCourses_Id(String userId, Long courseId);
 
     Page<Wishlist> findByUser_Id(String userId, Pageable page);
+
+    int deleteByUser_Id(String userId);
 }
