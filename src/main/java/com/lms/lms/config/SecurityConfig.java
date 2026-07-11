@@ -67,8 +67,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(req -> req
 //                        "/ws/**"
                         .requestMatchers("/auth/**", "/health", "/test", "/contact/**", "/upload/**", "/ws/**", "/webhook/**", "/payments/webhook").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/webinar-host-applications").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/course/**", "/courses/**", "/category/**", "/ratings/**", "/blog/**", "/webhook/**", "/certificates/**", "/questions/**", "/webinars/**", "/search/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/webinar-host-applications", "/programs/*/applications").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/course/**", "/courses/**", "/category/**", "/ratings/**", "/blog/**", "/webhook/**", "/certificates/**", "/questions/**", "/webinars/**", "/search/**", "/tutorials/**", "/programs/**").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex.accessDeniedHandler(customAccessDeniedHandler)
                         .authenticationEntryPoint(customAuthenticationEntryPoint)

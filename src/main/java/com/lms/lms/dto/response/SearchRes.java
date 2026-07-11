@@ -10,6 +10,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class SearchRes {
     private List<SearchItemRes> courses;
+    private List<SearchItemRes> tutorials;
     private List<SearchItemRes> webinars;
     private List<SearchItemRes> blogs;
     private Map<String, Long> totals;

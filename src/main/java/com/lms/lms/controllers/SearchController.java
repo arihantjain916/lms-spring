@@ -7,9 +7,11 @@ import com.lms.lms.dto.response.SearchItemRes;
 import com.lms.lms.dto.response.SearchRes;
 import com.lms.lms.modals.Blog;
 import com.lms.lms.modals.Courses;
+import com.lms.lms.modals.Tutorial;
 import com.lms.lms.modals.Webinar;
 import com.lms.lms.repo.BlogRepo;
 import com.lms.lms.repo.CoursesRepo;
+import com.lms.lms.repo.TutorialRepo;
 import com.lms.lms.repo.WebinarRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -38,6 +40,9 @@ public class SearchController {
     private CoursesRepo coursesRepo;
 
     @Autowired
+    private TutorialRepo tutorialRepo;
+
+    @Autowired
     private WebinarRepo webinarRepo;
 
     @Autowired
@@ -46,7 +51,7 @@ public class SearchController {
     @GetMapping("")
     public ResponseEntity<?> search(
             @RequestParam(required = false) String q,
-            @RequestParam(defaultValue = "course,webinar,blog") String types,
+            @RequestParam(defaultValue = "course,tutorial,webinar,blog") String types,
             @RequestParam(required = false) String categories,
             @RequestParam(required = false) String levels,
             @RequestParam(defaultValue = "newest") String sort,
@@ -87,6 +92,7 @@ public class SearchController {
             Pageable pageable = PageRequest.of(pageNumber, limit, this.resolveSort(sort));
 
             List<SearchItemRes> courseList = List.of();
+            List<SearchItemRes> tutorialList = List.of();
             List<SearchItemRes> webinarList = List.of();
             List<SearchItemRes> blogList = List.of();
             Map<String, Long> totals = new HashMap<>();
@@ -95,6 +101,12 @@ public class SearchController {
                 Page<Courses> courses = coursesRepo.searchCatalog(search, hasCategories, categoryIds, hasLevels, levelFilters, pageable);
                 courseList = courses.stream().map(this::toSearchItem).toList();
                 totals.put("course", courses.getTotalElements());
+            }
+
+            if (requestedTypes.contains("tutorial")) {
+                Page<Tutorial> tutorials = tutorialRepo.searchCatalog(search, hasCategories, categoryIds, pageable);
+                tutorialList = tutorials.stream().map(this::toSearchItem).toList();
+                totals.put("tutorial", tutorials.getTotalElements());
             }
 
             if (requestedTypes.contains("webinar")) {
@@ -109,7 +121,7 @@ public class SearchController {
                 totals.put("blog", blogs.getTotalElements());
             }
 
-            SearchRes res = new SearchRes(courseList, webinarList, blogList, totals, page, limit);
+            SearchRes res = new SearchRes(courseList, tutorialList, webinarList, blogList, totals, page, limit);
             return ResponseEntity.ok(new Default("Search Results Fetched Successfully", true, null, res));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
@@ -126,6 +138,8 @@ public class SearchController {
             List<Map<String, String>> suggestions = new ArrayList<>();
             coursesRepo.findTop5ByTitleContainingIgnoreCase(q)
                     .forEach(course -> suggestions.add(Map.of("type", "course", "title", course.getTitle(), "slug", course.getSlug())));
+            tutorialRepo.findTop5ByTitleContainingIgnoreCase(q)
+                    .forEach(tutorial -> suggestions.add(Map.of("type", "tutorial", "title", tutorial.getTitle(), "slug", tutorial.getSlug())));
             webinarRepo.findTop5ByTitleContainingIgnoreCase(q)
                     .forEach(webinar -> suggestions.add(Map.of("type", "webinar", "title", webinar.getTitle(), "slug", webinar.getSlug())));
             blogRepo.findTop5ByTitleContainingIgnoreCaseAndStatus(q, Blog.Staus.PUBLISHED)
@@ -145,6 +159,7 @@ public class SearchController {
 
             Map<String, Long> types = new HashMap<>();
             types.put("course", coursesRepo.searchCatalog(search, false, List.of("__none__"), false, List.of(Courses.Level.BEGINNER), one).getTotalElements());
+            types.put("tutorial", tutorialRepo.searchCatalog(search, false, List.of("__none__"), one).getTotalElements());
             types.put("webinar", webinarRepo.searchCatalog(search, false, List.of("__none__"), one).getTotalElements());
             types.put("blog", blogRepo.searchCatalog(search, Blog.Staus.PUBLISHED, one).getTotalElements());
 
@@ -175,6 +190,19 @@ public class SearchController {
                 null,
                 course.getCategory() != null ? course.getCategory().getName() : null,
                 course.getLevel() != null ? course.getLevel().name() : null
+        );
+    }
+
+    private SearchItemRes toSearchItem(Tutorial tutorial) {
+        return new SearchItemRes(
+                "tutorial",
+                tutorial.getId(),
+                tutorial.getTitle(),
+                tutorial.getSlug(),
+                tutorial.getDescription(),
+                tutorial.getThumbnailUrl(),
+                tutorial.getCategory() != null ? tutorial.getCategory().getName() : null,
+                tutorial.getLevel() != null ? tutorial.getLevel().name() : null
         );
     }
 
