@@ -204,7 +204,7 @@ public class AuthController {
 
     @PostMapping("/verify-email")
     @Transactional
-    public ResponseEntity<Default> verifyEmail(@Valid @RequestBody VerifyEmailReq req) {
+    public ResponseEntity<?> verifyEmail(@Valid @RequestBody VerifyEmailReq req, HttpServletResponse response, HttpServletRequest request) {
         try {
             VerificationToken token = verificationTokenRepo.findByTokenAndType(req.getToken(), VerificationToken.TokenType.EMAIL_VERIFICATION).orElse(null);
 
@@ -215,6 +215,19 @@ public class AuthController {
             user.setIsVerified(true);
             userRepo.save(user);
             verificationTokenRepo.delete(token);
+
+            // log the user in right away so they don't have to sign in after verifying
+            if (!user.getIsBanned() && !user.getIsDeleted() && user.getIsActive()) {
+                var jwtToken = jwtService.generateToken(user.getId(), request.getHeader("User-Agent"), request.getRemoteAddr());
+                var refreshToken = refreshTokenController.createRefreshToken(user, request.getRemoteAddr(), request.getHeader("User-Agent"));
+                Cookie tokenCookie = this.setCookie("token", jwtToken, 60 * 60, request.isSecure());
+                Cookie refreshCookie = this.setCookie("refresh", refreshToken, 60 * 60 * 24 * 30, request.isSecure());
+
+                response.addCookie(tokenCookie);
+                response.addCookie(refreshCookie);
+                return ResponseEntity.ok(new LoginRes("Email Verified Successfully", true, jwtToken, refreshToken));
+            }
+
             return ResponseEntity.ok(new Default("Email Verified Successfully", true, null, null));
         } catch (Exception e) {
             return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.INTERNAL_SERVER_ERROR);
