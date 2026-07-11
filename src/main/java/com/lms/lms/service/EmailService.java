@@ -40,11 +40,16 @@ public class EmailService {
             log.warn("Mail is not configured (MAIL_HOST is empty). Email to {} with subject '{}' was not sent. Body:\n{}", to, subject, body);
             return;
         }
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(from);
-        message.setTo(to);
-        message.setSubject(subject);
-        message.setText(body);
-        mailSender.send(message);
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(from);
+            message.setTo(to);
+            message.setSubject(subject);
+            message.setText(body);
+            mailSender.send(message);
+        } catch (Exception e) {
+            // a mail failure should not fail the request that triggered it; the user can use resend-verification
+            log.error("Failed to send email to {} with subject '{}': {}", to, subject, e.getMessage());
+        }
     }
 }
