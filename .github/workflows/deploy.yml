@@ -46,20 +46,24 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
-          script_stops: true
+          script_stop: true
+          # The repo lives under /root, which the `ubuntu` login user cannot even
+          # traverse (mode 0700), so the whole block runs as root via sudo.
+          # `ubuntu` has passwordless sudo on the stock AWS AMI.
           script: |
-            set -e
-            cd ~/arihant/java/lms-spring
+            sudo -H bash -eu <<'EOF'
+              cd /root/arihant/java/lms-spring
 
-            # 1. pull the latest code (compose file, .env stays untouched)
-            git fetch --all
-            git reset --hard origin/main
+              # 1. pull the latest code (compose file; .env stays untouched)
+              git fetch --all
+              git reset --hard origin/main
 
-            # 2. pull the freshly built image
-            docker compose pull app
+              # 2. pull the freshly built image
+              docker compose pull app
 
-            # 3. restart only the app service
-            docker compose up -d app
+              # 3. restart only the app service
+              docker compose up -d app
 
-            # 4. clean up old layers
-            docker image prune -f
+              # 4. clean up old layers
+              docker image prune -f
+            EOF
