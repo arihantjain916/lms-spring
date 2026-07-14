@@ -10,4 +10,5 @@ public class LoginRes {
     private Boolean status;
     private String token;
     private String refreshToken;
+    private AccountStatusRes accountStatus;
 }

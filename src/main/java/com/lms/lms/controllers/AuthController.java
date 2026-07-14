@@ -7,6 +7,7 @@ import com.lms.lms.dto.request.Login;
 import com.lms.lms.dto.request.Register;
 import com.lms.lms.dto.request.ResetPasswordReq;
 import com.lms.lms.dto.request.VerifyEmailReq;
+import com.lms.lms.dto.response.AccountStatusRes;
 import com.lms.lms.dto.response.Default;
 import com.lms.lms.dto.response.LoginRes;
 import com.lms.lms.dto.response.MeRes;
@@ -82,7 +83,12 @@ public class AuthController {
 
             String token = createVerificationToken(user, VerificationToken.TokenType.EMAIL_VERIFICATION, 1000L * 60 * 60 * 24);
             emailService.sendVerificationEmail(user.getEmail(), token);
-            return ResponseEntity.ok(new Default("User Created Successfully", true, null, null));
+            return ResponseEntity.ok(new Default(
+                    "User Created Successfully",
+                    true,
+                    null,
+                    AccountStatusRes.from(user)
+            ));
         } catch (Exception e) {
             return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -99,19 +105,19 @@ public class AuthController {
             }
 
             if (!isUserExist.getIsActive()) {
-                return new ResponseEntity<>(new Default("User Is Not Active", false, null, null), HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(new Default("User Is Not Active", false, null, AccountStatusRes.from(isUserExist)), HttpStatus.BAD_REQUEST);
             }
 
             if (isUserExist.getIsBanned()) {
-                return new ResponseEntity<>(new Default("User Is Banned", false, null, null), HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(new Default("User Is Banned", false, null, AccountStatusRes.from(isUserExist)), HttpStatus.BAD_REQUEST);
             }
 
             if (isUserExist.getIsDeleted()) {
-                return new ResponseEntity<>(new Default("User Does Not Exists", false, null, null), HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(new Default("User Does Not Exists", false, null, AccountStatusRes.from(isUserExist)), HttpStatus.BAD_REQUEST);
             }
 
             if (!isUserExist.getIsVerified()) {
-                return new ResponseEntity<>(new Default("User Is Not Verified", false, null, null), HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(new Default("User Is Not Verified", false, null, AccountStatusRes.from(isUserExist)), HttpStatus.BAD_REQUEST);
             }
 
 
@@ -125,7 +131,13 @@ public class AuthController {
 
                 response.addCookie(tokenCookie);
                 response.addCookie(refreshCookie);
-                return ResponseEntity.ok(new LoginRes("User Login Successfully", true, token, refreshToken));
+                return ResponseEntity.ok(new LoginRes(
+                        "User Login Successfully",
+                        true,
+                        token,
+                        refreshToken,
+                        AccountStatusRes.from(isUserExist)
+                ));
             }
             return new ResponseEntity<>(new Default("Invalid Credentials", false, null, null), HttpStatus.UNAUTHORIZED);
         } catch (Exception e) {
@@ -225,7 +237,13 @@ public class AuthController {
 
                 response.addCookie(tokenCookie);
                 response.addCookie(refreshCookie);
-                return ResponseEntity.ok(new LoginRes("Email Verified Successfully", true, jwtToken, refreshToken));
+                return ResponseEntity.ok(new LoginRes(
+                        "Email Verified Successfully",
+                        true,
+                        jwtToken,
+                        refreshToken,
+                        AccountStatusRes.from(user)
+                ));
             }
 
             return ResponseEntity.ok(new Default("Email Verified Successfully", true, null, null));

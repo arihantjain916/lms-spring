@@ -31,7 +31,7 @@ public interface CoursesRepo extends JpaRepository<Courses, Long> {
 
     @Query("""
             SELECT c FROM Courses c
-            WHERE (:q IS NULL OR lower(c.title) LIKE lower(concat('%', :q, '%')) OR lower(c.description) LIKE lower(concat('%', :q, '%')))
+            WHERE (:q = '' OR lower(c.title) LIKE lower(concat('%', :q, '%')) OR lower(c.description) LIKE lower(concat('%', :q, '%')))
               AND (:categoryId IS NULL OR c.category.id = :categoryId)
               AND (:level IS NULL OR c.level = :level)
               AND (:featured IS NULL OR c.isFeatured = :featured)
