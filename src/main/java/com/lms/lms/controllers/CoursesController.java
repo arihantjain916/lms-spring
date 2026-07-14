@@ -122,7 +122,9 @@ public class CoursesController {
 
             // subcategoryId maps to the same category table until categories get a hierarchy
             String categoryFilter = (subcategoryId != null && !subcategoryId.isBlank()) ? subcategoryId : categoryId;
-            String search = (q != null && !q.isBlank()) ? q : null;
+            // Keep this parameter non-null so PostgreSQL/Hibernate binds it as text.
+            // A nullable value can be inferred as bytea inside lower(concat(...)).
+            String search = (q != null && !q.isBlank()) ? q.trim() : "";
 
             int pageNumber = page > 0 ? page - 1 : 0;
             Pageable pageable = PageRequest.of(pageNumber, limit, this.resolveSort(sort));
@@ -161,10 +163,15 @@ public class CoursesController {
         }
     }
 
-    @GetMapping("/{courseId}")
-    public ResponseEntity<Default> getCourseById(@PathVariable Long courseId) {
+    @GetMapping("/{courseRef}")
+    public ResponseEntity<Default> getCourseByIdOrSlug(@PathVariable String courseRef) {
         try {
-            Courses course = coursesRepo.findById(courseId).orElse(null);
+            Courses course;
+            try {
+                course = coursesRepo.findById(Long.valueOf(courseRef)).orElse(null);
+            } catch (NumberFormatException ignored) {
+                course = coursesRepo.findBySlug(courseRef).orElse(null);
+            }
             if (course == null) {
                 return ResponseEntity.badRequest().body(new Default("Course Not Found", false, null, null));
             }
