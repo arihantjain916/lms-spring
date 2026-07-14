@@ -91,12 +91,12 @@ public class AiChatController {
 
 
             AiChatBot msg = new AiChatBot();
-            msg.setUserId("1a8f3943-acc7-42da-a007-83066bd39c52");
+            msg.setUserId(principal.getName());
             msg.setPrompt(message);
             msg.setResponse((String) chat.get("message"));
             msg.setPromptTokens((Integer) chat.get("promptTokens"));
             msg.setCompletionTokens((Integer) chat.get("completionTokens"));
-            msg.setTotalTokens((Integer) chat.get("completionTokens"));
+            msg.setTotalTokens((Integer) chat.get("totalTokens"));
             msg.setCreatedAt(Instant.now());
             msg.setModel("gemini-2.5-flash-lite");
 
