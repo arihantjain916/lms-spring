@@ -7,6 +7,7 @@ import com.lms.lms.dto.response.PaginatedResponse;
 import com.lms.lms.mappers.CourseMapper;
 import com.lms.lms.modals.Courses;
 import com.lms.lms.modals.Review;
+import com.lms.lms.modals.User;
 import com.lms.lms.repo.*;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -174,6 +176,7 @@ public class CourseController {
         return ResponseEntity.ok().body(new Default("Course Found", true, null, courseRes));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
     @PostMapping("/add")
     public ResponseEntity<?> addCourse(@Valid @RequestBody CourseReq courses){
         try{
@@ -218,6 +221,7 @@ public class CourseController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
     @PutMapping("/update")
     public ResponseEntity<?> updateCourse (@Valid @RequestBody CourseReq course){
         try{
@@ -231,6 +235,10 @@ public class CourseController {
 
             if(isCourseExist == null){
                 return ResponseEntity.badRequest().body(new Default("Invalid Course Id", false, null, null));
+            }
+
+            if (!this.canManageCourse(isCourseExist)) {
+                return ResponseEntity.status(403).body(new Default("You are not authorized to modify this course", false, null, null));
             }
 
             if(isCategoryExist == null){
@@ -258,12 +266,17 @@ public class CourseController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<Default> deleteCourse(@PathVariable("id") Long id){
         try{
             var isCourseExist = coursesRepo.findById(id).orElse(null);
             if(isCourseExist == null){
                 return  ResponseEntity.badRequest().body(new Default("Course Not Found", false, null, null));
+            }
+
+            if (!this.canManageCourse(isCourseExist)) {
+                return ResponseEntity.status(403).body(new Default("You are not authorized to delete this course", false, null, null));
             }
 
             coursesRepo.deleteById(id);
@@ -306,5 +319,19 @@ public class CourseController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
+    }
+
+    // an instructor may only manage their own courses; admins may manage any
+    private boolean canManageCourse(Courses course) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetails principal = (UserDetails) authentication.getPrincipal();
+        User currentUser = userRepo.findById(principal.getUsername()).orElse(null);
+        if (currentUser == null) {
+            return false;
+        }
+        if (currentUser.getRole() == User.Role.ADMIN) {
+            return true;
+        }
+        return course.getUser() != null && course.getUser().getId().equals(currentUser.getId());
     }
 }

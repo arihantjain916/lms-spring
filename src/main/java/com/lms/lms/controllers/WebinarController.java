@@ -1,17 +1,26 @@
 package com.lms.lms.controllers;
 
+import com.github.slugify.Slugify;
 import com.lms.lms.GlobalValue.UserDetails;
+import com.lms.lms.dto.request.ApplicationStatusReq;
 import com.lms.lms.dto.request.HostApplicationReq;
+import com.lms.lms.dto.request.LessonResourceReq;
+import com.lms.lms.dto.request.WebinarReq;
 import com.lms.lms.dto.response.Default;
 import com.lms.lms.dto.response.LessonResourceRes;
 import com.lms.lms.dto.response.PaginatedResponse;
 import com.lms.lms.dto.response.UserRes;
+import com.lms.lms.dto.response.WebinarHostApplicationRes;
 import com.lms.lms.dto.response.WebinarRegistrationRes;
 import com.lms.lms.dto.response.WebinarRes;
+import com.lms.lms.modals.Category;
 import com.lms.lms.modals.User;
 import com.lms.lms.modals.Webinar;
 import com.lms.lms.modals.WebinarHostApplication;
 import com.lms.lms.modals.WebinarRegistration;
+import com.lms.lms.modals.WebinarResource;
+import com.lms.lms.repo.CategoryRepo;
+import com.lms.lms.repo.UserRepo;
 import com.lms.lms.repo.WebinarHostApplicationRepo;
 import com.lms.lms.repo.WebinarRegistrationRepo;
 import com.lms.lms.repo.WebinarRepo;
@@ -30,6 +39,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Random;
 
 @RestController
 public class WebinarController {
@@ -45,6 +55,12 @@ public class WebinarController {
 
     @Autowired
     private WebinarHostApplicationRepo webinarHostApplicationRepo;
+
+    @Autowired
+    private CategoryRepo categoryRepo;
+
+    @Autowired
+    private UserRepo userRepo;
 
     @Autowired
     private UserDetails userDetails;
@@ -260,6 +276,270 @@ public class WebinarController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/webinars")
+    public ResponseEntity<Default> createWebinar(@Valid @RequestBody WebinarReq req) {
+        try {
+            User host = this.resolveHost(req.getHostId());
+            if (host == null) {
+                return ResponseEntity.badRequest().body(new Default("Host Not Found", false, null, null));
+            }
+
+            Category category = null;
+            if (req.getCategoryId() != null && !req.getCategoryId().isBlank()) {
+                category = categoryRepo.findById(req.getCategoryId()).orElse(null);
+                if (category == null) {
+                    return ResponseEntity.badRequest().body(new Default("Category Not Found", false, null, null));
+                }
+            }
+
+            Webinar webinar = new Webinar();
+            webinar.setTitle(req.getTitle());
+            webinar.setSlug(this.generateUniqueSlug(req.getTitle(), null));
+            webinar.setDescription(req.getDescription());
+            webinar.setThumbnailUrl(req.getThumbnailUrl());
+            webinar.setMeetingUrl(req.getMeetingUrl());
+            webinar.setRecordingUrl(req.getRecordingUrl());
+            webinar.setScheduledAt(req.getScheduledAt());
+            webinar.setDurationMinutes(req.getDurationMinutes());
+            webinar.setCategory(category);
+            webinar.setHost(host);
+            webinarRepo.save(webinar);
+
+            return ResponseEntity.ok(new Default("Webinar Created Successfully", true, null, this.toWebinarRes(webinar)));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/webinars/{webinarId}")
+    public ResponseEntity<Default> updateWebinar(@PathVariable String webinarId, @Valid @RequestBody WebinarReq req) {
+        try {
+            Webinar webinar = webinarRepo.findById(webinarId).orElse(null);
+            if (webinar == null) {
+                return new ResponseEntity<>(new Default("Webinar Not Found", false, null, null), HttpStatus.NOT_FOUND);
+            }
+
+            if (req.getHostId() != null && !req.getHostId().isBlank()) {
+                User host = this.resolveHost(req.getHostId());
+                if (host == null) {
+                    return ResponseEntity.badRequest().body(new Default("Host Not Found", false, null, null));
+                }
+                webinar.setHost(host);
+            }
+
+            if (req.getCategoryId() != null && !req.getCategoryId().isBlank()) {
+                Category category = categoryRepo.findById(req.getCategoryId()).orElse(null);
+                if (category == null) {
+                    return ResponseEntity.badRequest().body(new Default("Category Not Found", false, null, null));
+                }
+                webinar.setCategory(category);
+            } else {
+                webinar.setCategory(null);
+            }
+
+            if (!webinar.getTitle().equals(req.getTitle())) {
+                webinar.setSlug(this.generateUniqueSlug(req.getTitle(), webinar.getId()));
+            }
+            webinar.setTitle(req.getTitle());
+            webinar.setDescription(req.getDescription());
+            webinar.setThumbnailUrl(req.getThumbnailUrl());
+            webinar.setMeetingUrl(req.getMeetingUrl());
+            webinar.setRecordingUrl(req.getRecordingUrl());
+            webinar.setScheduledAt(req.getScheduledAt());
+            webinar.setDurationMinutes(req.getDurationMinutes());
+            webinarRepo.save(webinar);
+
+            return ResponseEntity.ok(new Default("Webinar Updated Successfully", true, null, this.toWebinarRes(webinar)));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/webinars/{webinarId}")
+    public ResponseEntity<Default> deleteWebinar(@PathVariable String webinarId) {
+        try {
+            Webinar webinar = webinarRepo.findById(webinarId).orElse(null);
+            if (webinar == null) {
+                return new ResponseEntity<>(new Default("Webinar Not Found", false, null, null), HttpStatus.NOT_FOUND);
+            }
+            webinarRepo.delete(webinar);
+            return ResponseEntity.ok(new Default("Webinar Deleted Successfully", true, null, null));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/webinars/{webinarId}/registrations")
+    public ResponseEntity<?> getWebinarRegistrations(
+            @PathVariable String webinarId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        try {
+            Webinar webinar = webinarRepo.findById(webinarId).orElse(null);
+            if (webinar == null) {
+                return new ResponseEntity<>(new Default("Webinar Not Found", false, null, null), HttpStatus.NOT_FOUND);
+            }
+
+            int pageNumber = page > 0 ? page - 1 : 0;
+            Pageable pageable = PageRequest.of(pageNumber, limit, Sort.by("registeredAt").descending());
+
+            Page<WebinarRegistration> registrations = webinarRegistrationRepo.findByWebinar_Id(webinarId, pageable);
+            List<WebinarRegistrationRes> registrationList = registrations
+                    .stream()
+                    .map(registration -> new WebinarRegistrationRes(registration.getId(), registration.getRegisteredAt(), this.toWebinarRes(registration.getWebinar())))
+                    .toList();
+
+            PaginatedResponse<WebinarRegistrationRes> paginatedResponse = new PaginatedResponse<>(
+                    "Webinar Registrations Fetched Successfully",
+                    true,
+                    registrationList,
+                    registrations.getNumber() + 1,
+                    registrations.getSize(),
+                    registrations.getTotalElements(),
+                    registrations.getTotalPages()
+            );
+            return ResponseEntity.ok().body(paginatedResponse);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/webinars/{webinarId}/resources")
+    public ResponseEntity<Default> addWebinarResource(@PathVariable String webinarId, @Valid @RequestBody LessonResourceReq req) {
+        try {
+            Webinar webinar = webinarRepo.findById(webinarId).orElse(null);
+            if (webinar == null) {
+                return new ResponseEntity<>(new Default("Webinar Not Found", false, null, null), HttpStatus.NOT_FOUND);
+            }
+
+            WebinarResource resource = new WebinarResource();
+            resource.setTitle(req.getTitle());
+            resource.setUrl(req.getUrl());
+            resource.setType(req.getType());
+            resource.setWebinar(webinar);
+            webinarResourceRepo.save(resource);
+
+            return ResponseEntity.ok(new Default("Resource Added Successfully", true, null,
+                    new LessonResourceRes(resource.getId(), resource.getTitle(), resource.getType(), resource.getCreatedAt())));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/webinars/{webinarId}/resources/{resourceId}")
+    public ResponseEntity<Default> deleteWebinarResource(@PathVariable String webinarId, @PathVariable String resourceId) {
+        try {
+            WebinarResource resource = webinarResourceRepo.findById(resourceId).orElse(null);
+            if (resource == null || !resource.getWebinar().getId().equals(webinarId)) {
+                return new ResponseEntity<>(new Default("Resource Not Found", false, null, null), HttpStatus.NOT_FOUND);
+            }
+            webinarResourceRepo.delete(resource);
+            return ResponseEntity.ok(new Default("Resource Deleted Successfully", true, null, null));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/webinar-host-applications")
+    public ResponseEntity<?> getHostApplications(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        try {
+            int pageNumber = page > 0 ? page - 1 : 0;
+            Pageable pageable = PageRequest.of(pageNumber, limit, Sort.by("createdAt").descending());
+
+            Page<WebinarHostApplication> applications = webinarHostApplicationRepo.findAll(pageable);
+            List<WebinarHostApplicationRes> applicationList = applications
+                    .stream()
+                    .map(this::toHostApplicationRes)
+                    .toList();
+
+            PaginatedResponse<WebinarHostApplicationRes> paginatedResponse = new PaginatedResponse<>(
+                    "Host Applications Fetched Successfully",
+                    true,
+                    applicationList,
+                    applications.getNumber() + 1,
+                    applications.getSize(),
+                    applications.getTotalElements(),
+                    applications.getTotalPages()
+            );
+            return ResponseEntity.ok().body(paginatedResponse);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PatchMapping("/webinar-host-applications/{applicationId}")
+    public ResponseEntity<Default> updateHostApplicationStatus(@PathVariable String applicationId, @Valid @RequestBody ApplicationStatusReq req) {
+        try {
+            WebinarHostApplication application = webinarHostApplicationRepo.findById(applicationId).orElse(null);
+            if (application == null) {
+                return new ResponseEntity<>(new Default("Application Not Found", false, null, null), HttpStatus.NOT_FOUND);
+            }
+
+            WebinarHostApplication.Status status;
+            try {
+                status = WebinarHostApplication.Status.valueOf(req.getStatus().toUpperCase());
+            } catch (IllegalArgumentException ex) {
+                return ResponseEntity.badRequest().body(new Default("Invalid Status. Allowed: PENDING, APPROVED, REJECTED", false, null, null));
+            }
+
+            application.setStatus(status);
+            webinarHostApplicationRepo.save(application);
+
+            return ResponseEntity.ok(new Default("Application Status Updated Successfully", true, null, this.toHostApplicationRes(application)));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    private User resolveHost(String hostId) {
+        if (hostId == null || hostId.isBlank()) {
+            return userDetails.userDetails();
+        }
+        User host = userRepo.findById(hostId).orElse(null);
+        if (host == null || host.getIsDeleted()) {
+            return null;
+        }
+        return host;
+    }
+
+    private String generateUniqueSlug(String title, String currentId) {
+        Slugify slugify = new Slugify();
+        String slug = slugify.slugify(title);
+        Webinar existing = webinarRepo.findBySlug(slug).orElse(null);
+        if (existing != null && (currentId == null || !existing.getId().equals(currentId))) {
+            slug = slug + "-" + new Random().nextInt(10000);
+        }
+        return slug;
+    }
+
+    private WebinarHostApplicationRes toHostApplicationRes(WebinarHostApplication application) {
+        UserRes user = application.getUser() != null
+                ? new UserRes(application.getUser().getId(), application.getUser().getUsername(), application.getUser().getName())
+                : null;
+        return new WebinarHostApplicationRes(
+                application.getId(),
+                application.getName(),
+                application.getEmail(),
+                application.getTopic(),
+                application.getMessage(),
+                application.getStatus().name(),
+                user,
+                application.getCreatedAt()
+        );
     }
 
     private WebinarRes toWebinarRes(Webinar webinar) {
