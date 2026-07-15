@@ -119,7 +119,7 @@ public class AdminController {
                 }
             }
 
-            String search = (q != null && !q.isBlank()) ? q : null;
+            String search = (q != null && !q.isBlank()) ? q : "%";
             int pageNumber = page > 0 ? page - 1 : 0;
             Pageable pageable = PageRequest.of(pageNumber, limit, Sort.by("createdAt").descending());
 

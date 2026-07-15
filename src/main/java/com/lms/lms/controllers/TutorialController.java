@@ -48,7 +48,7 @@ public class TutorialController {
             @RequestParam(defaultValue = "10") int limit
     ) {
         try {
-            String search = (q != null && !q.isBlank()) ? q : null;
+            String search = (q != null && !q.isBlank()) ? q : "%";
             boolean hasCategory = category != null && !category.isBlank();
             List<String> categoryIds = hasCategory ? List.of(category) : List.of("__none__");
 

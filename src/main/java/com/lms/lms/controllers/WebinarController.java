@@ -86,7 +86,7 @@ public class WebinarController {
             Sort sort = "upcoming".equals(statusFilter) ? Sort.by("scheduledAt").ascending() : Sort.by("scheduledAt").descending();
             Pageable pageable = PageRequest.of(pageNumber, limit, sort);
 
-            String search = (q != null && !q.isBlank()) ? q : null;
+            String search = (q != null && !q.isBlank()) ? q : "%";
             String categoryFilter = (category != null && !category.isBlank()) ? category : null;
 
             Page<Webinar> webinars = webinarRepo.searchWebinars(search, categoryFilter, statusFilter, new Date(), pageable);
