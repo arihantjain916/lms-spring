@@ -12,6 +12,8 @@ public interface ExamRepo extends JpaRepository<Exam, String> {
 
     List<Exam> findByCourses_IdAndStatus(Long courseId, Exam.Staus status);
 
+    List<Exam> findByCourses_IdAndStatusNot(Long courseId, Exam.Staus status);
+
     List<Exam> findByUser_Id(String courseId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)

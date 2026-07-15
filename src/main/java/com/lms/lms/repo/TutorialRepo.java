@@ -14,6 +14,8 @@ public interface TutorialRepo extends JpaRepository<Tutorial, String> {
 
     Optional<Tutorial> findBySlug(String slug);
 
+    Page<Tutorial> findByUser_Id(String userId, Pageable pageable);
+
     List<Tutorial> findTop5ByTitleContainingIgnoreCase(String title);
 
     @Query("""

@@ -31,6 +31,8 @@ public class ExamRes {
 
     private Integer timeLimitMin;
 
+    private String status;
+
     private CustomCourseRes course;
 
     private UserRes user;

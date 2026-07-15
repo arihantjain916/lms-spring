@@ -216,6 +216,33 @@ public class LessonsController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
+    @DeleteMapping("/{lessonId}/resources/{resourceId}")
+    public ResponseEntity<Default> deleteLessonResource(@PathVariable String lessonId, @PathVariable String resourceId) {
+        try {
+            Lesson lesson = lessonRepo.findById(lessonId).orElse(null);
+            if (lesson == null) {
+                return new ResponseEntity<>(new Default("Lesson Not Found", false, null, null), HttpStatus.NOT_FOUND);
+            }
+
+            LessonResource resource = lessonResourceRepo.findById(resourceId).orElse(null);
+            if (resource == null || resource.getLesson() == null || !resource.getLesson().getId().equals(lessonId)) {
+                return new ResponseEntity<>(new Default("Resource Not Found", false, null, null), HttpStatus.NOT_FOUND);
+            }
+
+            User user = userDetails.userDetails();
+            boolean isCourseOwner = lesson.getCourses().getUser() != null && lesson.getCourses().getUser().getId().equals(user.getId());
+            if (user.getRole() != User.Role.ADMIN && !isCourseOwner) {
+                return new ResponseEntity<>(new Default("Only The Course Instructor Can Delete Resources", false, null, null), HttpStatus.FORBIDDEN);
+            }
+
+            lessonResourceRepo.delete(resource);
+            return ResponseEntity.ok(new Default("Resource Deleted Successfully", true, null, null));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
     private boolean canAccessCourse(User user, Courses course) {
         if (user == null || user.getIsDeleted()) {
             return false;

@@ -90,6 +90,39 @@ public class TutorialController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
+    @GetMapping("/me")
+    public ResponseEntity<?> getMyTutorials(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        try {
+            User user = userDetails.userDetails();
+            if (user == null || user.getIsDeleted()) {
+                return new ResponseEntity<>(new Default("User Not Found", false, null, null), HttpStatus.NOT_FOUND);
+            }
+
+            int pageNumber = page > 0 ? page - 1 : 0;
+            Pageable pageable = PageRequest.of(pageNumber, limit, Sort.by("createdAt").descending());
+
+            Page<Tutorial> tutorials = tutorialRepo.findByUser_Id(user.getId(), pageable);
+            List<TutorialRes> tutorialList = tutorials.stream().map(this::toTutorialRes).toList();
+
+            PaginatedResponse<TutorialRes> paginatedResponse = new PaginatedResponse<>(
+                    "Tutorials Fetched Successfully",
+                    true,
+                    tutorialList,
+                    tutorials.getNumber() + 1,
+                    tutorials.getSize(),
+                    tutorials.getTotalElements(),
+                    tutorials.getTotalPages()
+            );
+            return ResponseEntity.ok().body(paginatedResponse);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
     @PostMapping("")
     public ResponseEntity<Default> createTutorial(@Valid @RequestBody TutorialReq req) {
         try {

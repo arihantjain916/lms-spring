@@ -13,6 +13,7 @@ import com.lms.lms.repo.*;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -56,28 +57,59 @@ public class ExamController {
     private ExamAttemptRepo examAttemptRepo;
 
 
+    // public/student listing: only PUBLISHED exams are ever exposed here, regardless of any status param
     @GetMapping("/{courseId}")
-    public ResponseEntity<Default> getAllExams(
-            @PathVariable Long courseId,
-            @RequestParam(defaultValue = "PUBLISHED") String status
-    ) {
+    public ResponseEntity<Default> getAllExams(@PathVariable Long courseId) {
         try {
             var course = coursesRepo.findById(courseId).orElse(null);
             if (course == null) {
                 return ResponseEntity.badRequest().body(new Default("Course Not Found", false, null, null));
             }
-            var ExamStatus = Exam.Staus.valueOf(status);
-            List<Exam> exams = examRepo.findByCourses_IdAndStatus(courseId, ExamStatus);
-            List<ExamRes> list = exams.stream().map(exam -> {
-                ExamRes examRes = examMapper.toDto(exam);
-                CustomCourseRes courseRes = new CustomCourseRes(exam.getCourses().getId(), exam.getCourses().getTitle(), exam.getCourses().getDescription());
-                examRes.setCourse(courseRes);
-                return examRes;
-            }).toList();
+            List<Exam> exams = examRepo.findByCourses_IdAndStatus(courseId, Exam.Staus.PUBLISHED);
+            List<ExamRes> list = exams.stream().map(this::toExamRes).toList();
             return ResponseEntity.ok().body(new Default("Exam Fetched Successfully", true, null, list));
         } catch (Exception ex) {
             return ResponseEntity.internalServerError().body(new Default(ex.getMessage(), false, null, null));
         }
+    }
+
+    // management listing: owner/admin only, returns every non-archived exam (including drafts) with status
+    @PreAuthorize("hasAnyRole('ADMIN','INSTRUCTOR')")
+    @GetMapping("/manage/{courseId}")
+    public ResponseEntity<Default> getManageExams(@PathVariable Long courseId) {
+        try {
+            var course = coursesRepo.findById(courseId).orElse(null);
+            if (course == null) {
+                return ResponseEntity.badRequest().body(new Default("Course Not Found", false, null, null));
+            }
+
+            if (!this.canManageCourse(course)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new Default("You are not authorized to manage this course", false, null, null));
+            }
+
+            List<Exam> exams = examRepo.findByCourses_IdAndStatusNot(courseId, Exam.Staus.ARCHIVED);
+            List<ExamRes> list = exams.stream().map(this::toExamRes).toList();
+            return ResponseEntity.ok().body(new Default("Exam Fetched Successfully", true, null, list));
+        } catch (Exception ex) {
+            return ResponseEntity.internalServerError().body(new Default(ex.getMessage(), false, null, null));
+        }
+    }
+
+    private ExamRes toExamRes(Exam exam) {
+        ExamRes examRes = examMapper.toDto(exam);
+        CustomCourseRes courseRes = new CustomCourseRes(exam.getCourses().getId(), exam.getCourses().getTitle(), exam.getCourses().getDescription());
+        examRes.setCourse(courseRes);
+        return examRes;
+    }
+
+    // an instructor may only manage exams of their own courses; admins may manage any
+    private boolean canManageCourse(Courses course) {
+        var current = userDetails.userDetails();
+
+        return current != null &&
+                (current.getRole() == User.Role.ADMIN ||
+                 (course != null && course.getUser() != null && course.getUser().getId().equals(current.getId())));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','INSTRUCTOR')")
@@ -91,6 +123,11 @@ public class ExamController {
             var course = coursesRepo.findById(examReq.getCourseId()).orElse(null);
             if (course == null) {
                 return ResponseEntity.badRequest().body(new Default("Course Not Found", false, null, null));
+            }
+
+            if (!this.canManageCourse(course)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new Default("You are not authorized to manage this course", false, null, null));
             }
 
             Exam exam = new Exam();
@@ -122,6 +159,12 @@ public class ExamController {
             if (examDetails == null) {
                 return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
             }
+
+            if (!this.canManageCourse(examDetails.getCourses())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new Default("You are not authorized to manage this course", false, null, null));
+            }
+
             Exam.Staus ExamStatus = null;
             try {
                 ExamStatus = Exam.Staus.valueOf(status.toUpperCase());
@@ -146,6 +189,11 @@ public class ExamController {
             var examDetails = examRepo.findById(examReq.getId()).orElse(null);
             if (examDetails == null) {
                 return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
+            }
+
+            if (!this.canManageCourse(examDetails.getCourses())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new Default("You are not authorized to manage this course", false, null, null));
             }
 
             examDetails.setShuffleQuestions(Boolean.TRUE.equals(examReq.getShuffleQuestions()) || examReq.getShuffleQuestions() == null);
@@ -175,6 +223,12 @@ public class ExamController {
             if (examDetails == null) {
                 return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
             }
+
+            if (!this.canManageCourse(examDetails.getCourses())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new Default("You are not authorized to manage this course", false, null, null));
+            }
+
             examRepo.updateStaus(examId, Exam.Staus.ARCHIVED);
             return ResponseEntity.ok().body(new Default("Exam Deleted Successfully", true, null, null));
         } catch (Exception ex) {

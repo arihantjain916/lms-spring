@@ -5,12 +5,15 @@ import com.lms.lms.dto.request.ReportCardReq;
 import com.lms.lms.dto.response.Default;
 import com.lms.lms.dto.response.ReportCardRes;
 import com.lms.lms.mappers.ReportMapper;
+import com.lms.lms.modals.Exam;
 import com.lms.lms.modals.ReportCard;
+import com.lms.lms.modals.User;
 import com.lms.lms.repo.EnrollmentRepo;
 import com.lms.lms.repo.ExamRepo;
 import com.lms.lms.repo.ReportCardRepo;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -73,6 +76,11 @@ public class ReportController {
                 return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
             }
 
+            if (!this.canManageExam(examDetails)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new Default("You are not authorized to manage this exam", false, null, null));
+            }
+
             var isUserEnrolled = enrollmentRepo.existsByUser_IdAndCourses_Id(user.getId(), examDetails.getCourses().getId());
 
             if (!isUserEnrolled) {
@@ -110,6 +118,11 @@ public class ReportController {
                 return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
             }
 
+            if (!this.canManageExam(examDetails)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new Default("You are not authorized to manage this exam", false, null, null));
+            }
+
             ReportCard isReportCardGenerated = reportCardRepo.findByUser_IdAndExam_Id(user.getId(), reportCardReq.getExamId());
 
             if (isReportCardGenerated == null) {
@@ -143,6 +156,15 @@ public class ReportController {
     @GetMapping("/exam/{examId}")
     public ResponseEntity<Default> getReportByCourse(@PathVariable String examId) {
         try {
+            var examDetails = examRepo.findById(examId).orElse(null);
+            if (examDetails == null) {
+                return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
+            }
+
+            if (!this.canManageExam(examDetails)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new Default("You are not authorized to view reports for this exam", false, null, null));
+            }
 
             List<ReportCardRes> reportCard = reportCardRepo.findByExam_Id(examId).stream().map(reportMapper::toDto).toList();
 
@@ -150,5 +172,15 @@ public class ReportController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
+    }
+
+    // an instructor may only access reports for exams on their own courses; admins may access any
+    private boolean canManageExam(Exam exam) {
+        User current = userDetails.userDetails();
+
+        return current != null &&
+                (current.getRole() == User.Role.ADMIN ||
+                 (exam != null && exam.getCourses() != null && exam.getCourses().getUser() != null
+                         && exam.getCourses().getUser().getId().equals(current.getId())));
     }
 }
