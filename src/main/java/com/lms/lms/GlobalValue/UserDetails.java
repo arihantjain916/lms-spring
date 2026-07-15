@@ -17,15 +17,9 @@ public class UserDetails {
     private UserRepo userRepo;
 
 
+    // returns the current user, or null when the request is anonymous / unauthenticated.
+    // never casts blindly: on public routes the principal can be the "anonymousUser" String.
     public User userDetails() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        org.springframework.security.core.userdetails.UserDetails user = (org.springframework.security.core.userdetails.UserDetails) authentication.getPrincipal();
-
-        return userRepo.findById(user.getUsername()).orElse(null);
-    }
-
-    // safe variant for public endpoints: returns null for anonymous / unauthenticated requests
-    public User userDetailsOrNull() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             return null;
@@ -35,6 +29,11 @@ public class UserDetails {
             return null;
         }
         return userRepo.findById(((org.springframework.security.core.userdetails.UserDetails) principal).getUsername()).orElse(null);
+    }
+
+    // kept as an explicit alias for call sites that want to signal "anonymous is expected here"
+    public User userDetailsOrNull() {
+        return this.userDetails();
     }
 
     public Collection<? extends GrantedAuthority> getAuthorities() {

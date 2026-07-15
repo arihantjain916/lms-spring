@@ -255,6 +255,9 @@ public class BlogController {
     public ResponseEntity<Default> getUserBlog() {
         try {
             var user = userDetails.userDetails();
+            if (user == null) {
+                return ResponseEntity.status(401).body(new Default("Authentication Required", false, null, null));
+            }
             List<BlogRes> blogRes = blogRepo.findAllByUserId(user.getId()).stream().map(blogMapper::toDto).toList();
 
             return ResponseEntity.ok().body(new Default("Blog Fetched Successfully", true, null, blogRes));

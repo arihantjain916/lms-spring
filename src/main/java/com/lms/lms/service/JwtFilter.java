@@ -35,68 +35,68 @@ public class JwtFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        try {
-            String authHeader = request.getHeader("Authorization");
+        String requestUri = request.getRequestURI();
 
-            String requestUri = request.getRequestURI();
+        boolean matches = publicRoutes.PUBLIC.stream()
+                .anyMatch(pattern -> pathMatcher.match(pattern, requestUri));
 
-            boolean matches = publicRoutes.PUBLIC.stream()
-                    .anyMatch(pattern -> pathMatcher.match(pattern, requestUri));
+        boolean openForGet = request.getMethod().equals("GET") && publicRoutes.OpenForGet.stream()
+                .anyMatch(pattern -> pathMatcher.match(pattern, requestUri));
 
-            boolean openForGet = request.getMethod().equals("GET") && publicRoutes.OpenForGet.stream()
-                    .anyMatch(pattern -> pathMatcher.match(pattern, requestUri));
+        boolean isPublic = matches || openForGet;
 
-
-
-            if(matches || openForGet) {
-                filterChain.doFilter(request, response);
-                return;
+        // resolve a bearer token from the Authorization header or the "token" cookie
+        String authHeader = request.getHeader("Authorization");
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (cookie.getName().equals("token") && (authHeader == null || authHeader.isBlank())) {
+                    authHeader = "Bearer " + cookie.getValue();
+                }
             }
+        }
 
-            Cookie[] cookies = request.getCookies();
-            if (cookies != null) {
-                for (Cookie cookie : cookies) {
-                    if(cookie.getName().equals("token")){
-                        if (authHeader == null || authHeader.isBlank()) {
-                            authHeader = "Bearer " + cookie.getValue();
-                        }
+        boolean hasToken = authHeader != null && authHeader.startsWith("Bearer ");
+
+        // public route with no credentials: continue anonymously, nothing to authenticate
+        if (isPublic && !hasToken) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        try {
+            if (hasToken) {
+                String token = authHeader.substring(7);
+                String id = jwtService.extractUsername(token);
+                String userAgent = jwtService.extractData(token, "userAgent");
+                String ipAddress = jwtService.extractData(token, "ipAddress");
+
+                // token is bound to the issuing device; reject if it no longer matches
+                if (userAgent == null || ipAddress == null
+                        || !userAgent.equals(request.getHeader("User-Agent"))
+                        || !ipAddress.equals(request.getRemoteAddr())) {
+                    throw new Exception("Invalid Token");
+                }
+
+                if (id != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    UserDetails userDetails = context.getBean(UserDetailsService.class).loadUserById(id);
+                    if (jwtService.validateToken(token, userDetails)) {
+                        UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                        usernamePasswordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
                     }
                 }
             }
-
-            String token = null;
-            String id = null;
-            String userAgent = null;
-            String ipAddress = null;
-
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                token = authHeader.substring(7);
-                id = jwtService.extractUsername(token);
-                userAgent = jwtService.extractData(token, "userAgent");
-                ipAddress = jwtService.extractData(token, "ipAddress");
-            }
-
-//            request.getHeader("User-Agent") ,request.getRemoteAddr()
-            assert userAgent != null;
-            assert ipAddress != null;
-
-            if(!userAgent.equals(request.getHeader("User-Agent")) || !ipAddress.equals(request.getRemoteAddr())){
-                throw new Exception("Invalid Token");
-            }
-
-            if (id != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                UserDetails userDetails = context.getBean(UserDetailsService.class).loadUserById(id);
-                if (jwtService.validateToken(token, userDetails)) {
-                    UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                    usernamePasswordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
-                }
-            }
-
-            filterChain.doFilter(request, response);
         } catch (Exception e) {
             SecurityContextHolder.clearContext();
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
+            // on a protected route a bad/expired token is rejected; on a public route it just
+            // means the request proceeds anonymously
+            if (!isPublic) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
+                return;
+            }
         }
+
+        filterChain.doFilter(request, response);
     }
 }
