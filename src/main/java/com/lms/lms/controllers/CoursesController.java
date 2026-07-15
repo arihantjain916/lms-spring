@@ -130,9 +130,10 @@ public class CoursesController {
             Pageable pageable = PageRequest.of(pageNumber, limit, this.resolveSort(sort));
 
             Page<Courses> allCourses = coursesRepo.searchCourses(search, categoryFilter, levelFilter, featured, rating, priceFilter, maxPrice, pageable);
+            String uid = this.currentUserId();
             List<CourseRes> courseList = allCourses
                     .stream()
-                    .map(this::toCourseRes)
+                    .map(course -> this.toCourseRes(course, uid))
                     .toList();
 
             PaginatedResponse<CourseRes> paginatedResponse = new PaginatedResponse<>(
@@ -153,9 +154,10 @@ public class CoursesController {
     @GetMapping("/featured")
     public ResponseEntity<Default> getFeaturedCourses(@RequestParam(defaultValue = "10") int limit) {
         try {
+            String uid = this.currentUserId();
             List<CourseRes> courses = coursesRepo.findByIsFeaturedTrue(PageRequest.of(0, limit, Sort.by("createdAt").descending()))
                     .stream()
-                    .map(this::toCourseRes)
+                    .map(course -> this.toCourseRes(course, uid))
                     .toList();
             return ResponseEntity.ok().body(new Default("Featured Courses Fetched Successfully", true, null, courses));
         } catch (Exception e) {
@@ -318,9 +320,10 @@ public class CoursesController {
                 return ResponseEntity.badRequest().body(new Default("Course Not Found", false, null, null));
             }
 
+            String uid = this.currentUserId();
             List<CourseRes> related = coursesRepo.findByCategoryIdAndIdNot(course.getCategory().getId(), courseId, PageRequest.of(0, limit, Sort.by("createdAt").descending()))
                     .stream()
-                    .map(this::toCourseRes)
+                    .map(course2 -> this.toCourseRes(course2, uid))
                     .toList();
             return ResponseEntity.ok().body(new Default("Related Courses Fetched Successfully", true, null, related));
         } catch (Exception e) {
@@ -465,6 +468,11 @@ public class CoursesController {
     }
 
     private CourseRes toCourseRes(Courses course) {
+        return toCourseRes(course, this.currentUserId());
+    }
+
+    // overload used by list endpoints so the current user is resolved once per request, not per course
+    private CourseRes toCourseRes(Courses course, String currentUserId) {
         CourseRes dto = courseMapper.toDto(course);
         Double price = pricingRepo.getMinPlanPriceByCourseId(course.getId());
         Double avgRating = ratingRepo.avgRatingOfCourse(course.getId());
@@ -476,7 +484,13 @@ public class CoursesController {
         dto.setTotalRating(totalRating);
         dto.setUpvote(upCount);
         dto.setDownvote(downCount);
+        dto.setIsEnrolled(currentUserId != null && enrollmentRepo.existsByUser_IdAndCourses_Id(currentUserId, course.getId()));
         return dto;
+    }
+
+    private String currentUserId() {
+        User user = userDetails.userDetailsOrNull();
+        return user != null ? user.getId() : null;
     }
 
     private Sort resolveSort(String sort) {

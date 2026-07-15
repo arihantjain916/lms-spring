@@ -24,6 +24,19 @@ public class UserDetails {
         return userRepo.findById(user.getUsername()).orElse(null);
     }
 
+    // safe variant for public endpoints: returns null for anonymous / unauthenticated requests
+    public User userDetailsOrNull() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+        Object principal = authentication.getPrincipal();
+        if (!(principal instanceof org.springframework.security.core.userdetails.UserDetails)) {
+            return null;
+        }
+        return userRepo.findById(((org.springframework.security.core.userdetails.UserDetails) principal).getUsername()).orElse(null);
+    }
+
     public Collection<? extends GrantedAuthority> getAuthorities() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication.getAuthorities();

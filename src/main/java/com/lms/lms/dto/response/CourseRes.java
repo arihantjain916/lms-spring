@@ -32,6 +32,9 @@ public class CourseRes {
 
     private Boolean isFeatured;
 
+    // true when the current user is enrolled in this course; false for anonymous/not-enrolled
+    private Boolean isEnrolled;
+
     private String level;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:mm")

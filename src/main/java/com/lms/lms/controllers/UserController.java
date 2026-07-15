@@ -379,6 +379,8 @@ public class UserController {
         dto.setTotalRating(totalRating);
         dto.setUpvote(upCount);
         dto.setDownvote(downCount);
+        User current = userDetails.userDetailsOrNull();
+        dto.setIsEnrolled(current != null && enrollmentRepo.existsByUser_IdAndCourses_Id(current.getId(), course.getId()));
         return dto;
     }
 

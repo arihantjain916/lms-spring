@@ -49,6 +49,9 @@ public class CourseController {
     @Autowired
     private CourseMapper courseMapper;
 
+    @Autowired
+    private EnrollmentRepo enrollmentRepo;
+
     @GetMapping("/all")
     public ResponseEntity<PaginatedResponse<CourseRes>> getCourses(
             @RequestParam(required = false) String userId,
@@ -65,6 +68,7 @@ public class CourseController {
         Pageable pageable = PageRequest.of(pageNumber, size, sort);
 
         Page<Courses> allCourses = coursesRepo.findAll(pageable);
+        String uid = this.currentUserId();
         List<CourseRes> courseList = allCourses
                 .stream()
                 .map(course -> {
@@ -79,6 +83,7 @@ public class CourseController {
                     dto.setTotalRating(totalRating);
                     dto.setUpvote(upCount);
                     dto.setDownvote(downCount);
+                    dto.setIsEnrolled(this.isEnrolled(uid, course.getId()));
                     return dto;
                 })
                 .toList();
@@ -102,7 +107,9 @@ public class CourseController {
            if (course == null) {
                return ResponseEntity.badRequest().body(new Default("Course Not Found", false, null, null));
            }
-           return ResponseEntity.ok().body(new Default("Course Found", true, null, courseMapper.toDto(course)));
+           CourseRes dto = courseMapper.toDto(course);
+           dto.setIsEnrolled(this.isEnrolled(this.currentUserId(), course.getId()));
+           return ResponseEntity.ok().body(new Default("Course Found", true, null, dto));
        } catch (Exception e) {
            return ResponseEntity.internalServerError().body(new Default("Internal Server Error", false, null, null));
        }
@@ -123,6 +130,7 @@ public class CourseController {
         Pageable pageable = PageRequest.of(pageNumber, size, sort);
 
         Page<Courses> allCourses = coursesRepo.findByCategoryId(category_id, pageable);
+        String uid = this.currentUserId();
         List<CourseRes> courses = allCourses
                .stream()
                .map(course -> {
@@ -137,6 +145,7 @@ public class CourseController {
                    dto.setTotalRating(totalRating);
                    dto.setUpvote(upcount);
                    dto.setDownvote(downcount);
+                   dto.setIsEnrolled(this.isEnrolled(uid, course.getId()));
                    return dto;
                })
                .toList();
@@ -171,6 +180,7 @@ public class CourseController {
         courseRes.setTotalRating(totalRating);
         courseRes.setUpvote(upCount);
         courseRes.setDownvote(downCount);
+        courseRes.setIsEnrolled(this.isEnrolled(this.currentUserId(), course.getId()));
 
 
         return ResponseEntity.ok().body(new Default("Course Found", true, null, courseRes));
@@ -319,6 +329,24 @@ public class CourseController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
+    }
+
+    // resolves the current user's id, or null for anonymous/unauthenticated (course reads are public)
+    private String currentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+        Object principal = authentication.getPrincipal();
+        if (!(principal instanceof UserDetails)) {
+            return null;
+        }
+        var user = userRepo.findById(((UserDetails) principal).getUsername()).orElse(null);
+        return user != null ? user.getId() : null;
+    }
+
+    private boolean isEnrolled(String currentUserId, Long courseId) {
+        return currentUserId != null && enrollmentRepo.existsByUser_IdAndCourses_Id(currentUserId, courseId);
     }
 
     // an instructor may only manage their own courses; admins may manage any
