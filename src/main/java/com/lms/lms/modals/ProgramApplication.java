@@ -33,7 +33,7 @@ public class ProgramApplication {
 
     private String phone;
 
-    @Column(nullable = false, length = 2000)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String message;
 
     @Enumerated(value = EnumType.STRING)

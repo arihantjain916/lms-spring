@@ -30,6 +30,7 @@ public class Ratings {
     @DecimalMax("5.0")
     private BigDecimal rating;
 
+    @Column(columnDefinition = "TEXT")
     private String comment;
 
     @Column(nullable = false, updatable = false)

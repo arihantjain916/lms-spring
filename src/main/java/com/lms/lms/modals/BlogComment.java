@@ -24,7 +24,7 @@ public class BlogComment {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(nullable = false, length = 1000)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String comment;
 
     @ManyToOne

@@ -28,7 +28,7 @@ public class Tutorial {
     @Column(unique = true, nullable = false)
     private String slug;
 
-    @Column(nullable = false, length = 2000)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
     @Column(nullable = false, columnDefinition = "text")

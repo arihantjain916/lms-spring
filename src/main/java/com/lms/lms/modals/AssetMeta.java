@@ -34,7 +34,7 @@ public class AssetMeta {
     private String extension;
     @Column(nullable = false)
     private String mimeType;
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
     @Column(nullable = false)
     private String visibility;

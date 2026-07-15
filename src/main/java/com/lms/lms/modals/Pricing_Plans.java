@@ -24,7 +24,13 @@ public class Pricing_Plans {
     private String id;
 
     @Column(nullable = false)
-    private String title,description, currency;
+    private String title;
+
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String description;
+
+    @Column(nullable = false)
+    private String currency;
 
     @Column(nullable = false)
     @Min(0)

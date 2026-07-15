@@ -24,7 +24,7 @@ public class Lesson {
     @Column(nullable = false, length = 1000)
     private String time;
 
-    @Column(nullable = false, length = 1000)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
     @Column(nullable = false, length = 1000)

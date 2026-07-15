@@ -22,7 +22,7 @@ public class QuestionAttempt {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String answer;
 
     private BigDecimal awardedMarks;

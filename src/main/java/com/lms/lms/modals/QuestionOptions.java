@@ -23,7 +23,7 @@ public class QuestionOptions {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String option;
 
     @Column(nullable = false)

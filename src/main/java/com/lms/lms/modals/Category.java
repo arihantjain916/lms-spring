@@ -25,7 +25,7 @@ public class Category {
     private String slug;
     @Column(unique = false, nullable = false)
     private String name;
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
     private Boolean isFeatured = false;
 
