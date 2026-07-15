@@ -326,12 +326,12 @@ public class ExamController {
 
     public Instant convertStringToInstant(String date) {
         try {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
-                    .withZone(ZoneId.of("UTC"));
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
             LocalDateTime localDateTime = LocalDateTime.parse(date, formatter);
 
-            return localDateTime.atZone(ZoneId.of("UTC")).toInstant();
+            // the incoming wall-clock is IST; interpret it in IST so it round-trips correctly
+            return localDateTime.atZone(ZoneId.of("Asia/Kolkata")).toInstant();
         } catch (Exception e) {
             return null;
         }
