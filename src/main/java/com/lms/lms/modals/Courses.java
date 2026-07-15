@@ -21,7 +21,7 @@ public class Courses {
     @GeneratedValue
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String title;
 
     @Column(unique = true, nullable = false)

@@ -26,7 +26,7 @@ public class Exam {
     private boolean showScoreImmediately = false;
     private Integer maxAttempts = 1;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String title;
 
     @Column(nullable = false)

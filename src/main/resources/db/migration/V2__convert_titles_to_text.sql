@@ -1,0 +1,34 @@
+-- Titles are intentionally unbounded long-form values in the application model.
+
+ALTER TABLE IF EXISTS blog
+    ALTER COLUMN title TYPE TEXT;
+
+ALTER TABLE IF EXISTS courses
+    ALTER COLUMN title TYPE TEXT;
+
+ALTER TABLE IF EXISTS exam
+    ALTER COLUMN title TYPE TEXT;
+
+ALTER TABLE IF EXISTS lesson
+    ALTER COLUMN title TYPE TEXT;
+
+ALTER TABLE IF EXISTS lesson_resource
+    ALTER COLUMN title TYPE TEXT;
+
+ALTER TABLE IF EXISTS pricing_plans
+    ALTER COLUMN title TYPE TEXT;
+
+ALTER TABLE IF EXISTS program
+    ALTER COLUMN title TYPE TEXT;
+
+ALTER TABLE IF EXISTS questions
+    ALTER COLUMN title TYPE TEXT;
+
+ALTER TABLE IF EXISTS tutorial
+    ALTER COLUMN title TYPE TEXT;
+
+ALTER TABLE IF EXISTS webinar
+    ALTER COLUMN title TYPE TEXT;
+
+ALTER TABLE IF EXISTS webinar_resource
+    ALTER COLUMN title TYPE TEXT;

@@ -22,8 +22,11 @@ public class Blog {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String title;
+
     @Column(nullable = false, unique = true)
-    private String title, slug;
+    private String slug;
 
     @Column(nullable = false)
     private String read_time;
