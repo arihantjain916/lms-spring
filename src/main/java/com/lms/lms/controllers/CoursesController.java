@@ -198,7 +198,10 @@ public class CoursesController {
             int pageNumber = page > 0 ? page - 1 : 0;
             Pageable pageable = PageRequest.of(pageNumber, limit, Sort.by("createdAt").ascending());
 
-            Page<Lesson> lessons = lessonRepo.findByCourses_Id(courseId, pageable);
+            // admins and the course owner see every lesson; everyone else only published lessons
+            Page<Lesson> lessons = this.canManageCourse(course)
+                    ? lessonRepo.findByCourses_Id(courseId, pageable)
+                    : lessonRepo.findByCourses_IdAndStatusIgnoreCase(courseId, "published", pageable);
             List<LessonRes> lessonList = lessons
                     .stream()
                     .map(lessonMapper::toDto)
@@ -491,6 +494,14 @@ public class CoursesController {
     private String currentUserId() {
         User user = userDetails.userDetailsOrNull();
         return user != null ? user.getId() : null;
+    }
+
+    // admins may manage any course; instructors only their own. anonymous/other users cannot.
+    private boolean canManageCourse(Courses course) {
+        User current = userDetails.userDetailsOrNull();
+        return current != null &&
+                (current.getRole() == User.Role.ADMIN ||
+                 (course != null && course.getUser() != null && course.getUser().getId().equals(current.getId())));
     }
 
     private Sort resolveSort(String sort) {

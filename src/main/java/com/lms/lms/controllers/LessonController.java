@@ -61,7 +61,10 @@ public class LessonController {
             Sort sort = Objects.equals(order, "asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
             Pageable pageable = PageRequest.of(pageNumber, size, sort);
 
-            Page<Lesson> lessons = lessonRepo.findByCourses_Id(courseId, pageable);
+            // admins and the course owner see every lesson; everyone else only published lessons
+            Page<Lesson> lessons = this.canManageCourse(course)
+                    ? lessonRepo.findByCourses_Id(courseId, pageable)
+                    : lessonRepo.findByCourses_IdAndStatusIgnoreCase(courseId, "published", pageable);
 
             List<LessonRes> blogRes = lessons.
                     stream()

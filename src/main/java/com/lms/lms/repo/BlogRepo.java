@@ -22,11 +22,15 @@ public interface BlogRepo extends JpaRepository<Blog, String> {
                  SELECT b FROM Blog b\s
                  WHERE (:user IS NULL OR b.user = :user)\s
                   AND (:category IS NULL OR b.category = :category)
+                  AND (:includeAll = true OR b.status = :published OR b.user.id = :viewerId)
                   ORDER BY b.createdAt DESC
             \s""")
-    Page<Blog> findByUserAndCategory(
+    Page<Blog> findVisibleBlogs(
             @Param("user") User user,
             @Param("category") Blog.Category category,
+            @Param("includeAll") boolean includeAll,
+            @Param("published") Blog.Staus published,
+            @Param("viewerId") String viewerId,
             Pageable pageable
     );
 

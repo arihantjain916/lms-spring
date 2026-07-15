@@ -84,7 +84,12 @@ public class BlogController {
             int pageNumber = page > 0 ? page - 1 : 0;
             Sort sort = Objects.equals(order, "asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
             Pageable pageable = PageRequest.of(pageNumber, size, sort);
-            Page<Blog> blogs = blogRepo.findByUserAndCategory(user, categoryValue, pageable);
+
+            // admins see every blog; other viewers see published blogs plus their own (any status)
+            User viewer = userDetails.userDetailsOrNull();
+            boolean isAdmin = viewer != null && viewer.getRole() == User.Role.ADMIN;
+            String viewerId = viewer != null ? viewer.getId() : null;
+            Page<Blog> blogs = blogRepo.findVisibleBlogs(user, categoryValue, isAdmin, Blog.Staus.PUBLISHED, viewerId, pageable);
 
             List<BlogRes> blogRes = blogs.
                     stream()
@@ -273,12 +278,30 @@ public class BlogController {
             if (blog == null) {
                 return ResponseEntity.badRequest().body(new Default("Blog Not Found", false, null, null));
             }
+
+            // a non-published blog is only visible to an admin or its author
+            if (blog.getStatus() != Blog.Staus.PUBLISHED && !this.canViewUnpublished(blog)) {
+                return ResponseEntity.badRequest().body(new Default("Blog Not Found", false, null, null));
+            }
+
             BlogRes blogRes = blogMapper.toDto(blog);
             return ResponseEntity.ok().body(new Default("Blog Details Fetched Successfully", true, null, blogRes));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
 
+    }
+
+    // admins may view any blog; other users may view their own regardless of status
+    private boolean canViewUnpublished(Blog blog) {
+        User viewer = userDetails.userDetailsOrNull();
+        if (viewer == null) {
+            return false;
+        }
+        if (viewer.getRole() == User.Role.ADMIN) {
+            return true;
+        }
+        return blog.getUser() != null && blog.getUser().getId().equals(viewer.getId());
     }
 
 }
