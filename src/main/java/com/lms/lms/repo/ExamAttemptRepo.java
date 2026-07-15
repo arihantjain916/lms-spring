@@ -14,6 +14,6 @@ public interface ExamAttemptRepo extends JpaRepository<ExamAttempt, String> {
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Transactional
-    @Query("update ExamAttempt e set e.isCompleted = :status where e.id = :examId")
-    void markExamCompete(String examId, Boolean status);
+    @Query("update ExamAttempt e set e.isCompleted = :status where e.id = :attemptId")
+    void markExamCompete(String attemptId, Boolean status);
 }

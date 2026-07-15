@@ -24,6 +24,8 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
 
 @RestController
@@ -250,6 +252,18 @@ public class ExamController {
                 return ResponseEntity.badRequest().body(new Default("Invalid Exam Id", false, null, null));
             }
 
+            // only a published exam can be attempted, and only within its scheduled window
+            if (examDetails.getStatus() != Exam.Staus.PUBLISHED) {
+                return ResponseEntity.badRequest().body(new Default("Exam Is Not Available", false, null, null));
+            }
+            Instant nowAttempt = Instant.now();
+            if (examDetails.getStartsAt() != null && nowAttempt.isBefore(examDetails.getStartsAt())) {
+                return ResponseEntity.badRequest().body(new Default("Exam Has Not Started Yet", false, null, null));
+            }
+            if (examDetails.getEndsAt() != null && nowAttempt.isAfter(examDetails.getEndsAt())) {
+                return ResponseEntity.badRequest().body(new Default("Exam Has Ended", false, null, null));
+            }
+
             var isUserEnrolled = enrollmentRepo.existsByUser_IdAndCourses_Id(user.getId(), examDetails.getCourses().getId());
 
             if (!isUserEnrolled) {
@@ -294,7 +308,31 @@ public class ExamController {
                 return ResponseEntity.badRequest().body(new Default("User not attempt exam yet.", false, null, null));
             }
 
-            examAttemptRepo.markExamCompete(examSubmitReq.getExamId(), Boolean.TRUE);
+            // the most recent attempt is the one being submitted
+            ExamAttempt attempt = isExamAttempt.stream()
+                    .max(Comparator.comparing(ExamAttempt::getCreatedAt))
+                    .orElse(null);
+            if (attempt == null) {
+                return ResponseEntity.badRequest().body(new Default("User not attempt exam yet.", false, null, null));
+            }
+            if (Boolean.TRUE.equals(attempt.getIsCompleted())) {
+                return ResponseEntity.badRequest().body(new Default("Exam Already Submitted", false, null, null));
+            }
+
+            // effective deadline is the exam end time, capped by the per-attempt time limit if set
+            Instant now = Instant.now();
+            Instant deadline = examDetails.getEndsAt();
+            if (examDetails.getTimeLimitMin() != null && examDetails.getTimeLimitMin() > 0) {
+                Instant limitDeadline = attempt.getCreatedAt().toInstant().plus(examDetails.getTimeLimitMin(), ChronoUnit.MINUTES);
+                if (deadline == null || limitDeadline.isBefore(deadline)) {
+                    deadline = limitDeadline;
+                }
+            }
+            if (deadline != null && now.isAfter(deadline)) {
+                return ResponseEntity.badRequest().body(new Default("Exam Time Is Over. Submission Not Allowed.", false, null, null));
+            }
+
+            examAttemptRepo.markExamCompete(attempt.getId(), Boolean.TRUE);
 
             for (QuestionSubmitReq questionSubmitReq: examSubmitReq.getQuestions()){
                 var isQuestionExist = questionRepo.findById(questionSubmitReq.getQuestionId()).orElse(null);
