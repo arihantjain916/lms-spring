@@ -265,7 +265,7 @@ public class ExamController {
             ExamAttempt examAttempt = new ExamAttempt();
             examAttempt.setIsAttempt(Boolean.TRUE);
             examAttempt.setExam(examDetails);
-            examAttempt.setUser(examDetails.getUser());
+            examAttempt.setUser(user);
             examAttempt.setIsCompleted(Boolean.FALSE);
 
             examAttemptRepo.save(examAttempt);
