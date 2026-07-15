@@ -344,6 +344,7 @@ public class ExamController {
                 questionAttempt.setAnswer(questionSubmitReq.getAnswer());
                 questionAttempt.setExam(examDetails);
                 questionAttempt.setUser(user);
+                questionAttempt.setExamAttempt(attempt);
                 questionAttemptRepo.save(questionAttempt);
             }
 

@@ -8,4 +8,6 @@ import java.util.List;
 public interface QuestionAttemptRepo extends JpaRepository<QuestionAttempt, String> {
 
     List<QuestionAttempt> findByUser_IdAndExam_Id(String userId, String examId);
+
+    List<QuestionAttempt> findByExamAttempt_IdOrderByAttemptedAtAsc(String examAttemptId);
 }

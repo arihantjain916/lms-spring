@@ -24,6 +24,18 @@ public class ExamAttempt {
     private Boolean isCompleted = false;
     private Boolean isAttempt = false;
 
+    @Enumerated(EnumType.STRING)
+    private GradingStatus gradingStatus = GradingStatus.PENDING;
+
+    @Column(columnDefinition = "TEXT")
+    private String gradingFeedback;
+
+    private Date gradedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "graded_by")
+    private User gradedBy;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "exam_id", nullable = false)
     private Exam exam;
@@ -41,4 +53,10 @@ public class ExamAttempt {
     @Column(nullable = false)
     @UpdateTimestamp
     private Date updatedAt = new Date();
+
+    public enum GradingStatus {
+        PENDING,
+        IN_PROGRESS,
+        FINALIZED
+    }
 }

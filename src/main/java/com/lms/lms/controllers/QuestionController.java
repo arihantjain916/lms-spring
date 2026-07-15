@@ -90,8 +90,8 @@ public class QuestionController {
             }
 
             if (questionReq.getType() == Questions.Type.MCQ) {
-                if (questionReq.getOptions() == null || questionReq.getOptions().isEmpty()) {
-                    return ResponseEntity.badRequest().body(new Default("Options are required for MCQ", false, null, null));
+                if (questionReq.getOptions() == null || questionReq.getOptions().size() != 4) {
+                    return ResponseEntity.badRequest().body(new Default("Exactly 4 options are required for MCQ", false, null, null));
                 }
                 boolean hasCorrect = questionReq.getOptions().stream().anyMatch(o -> Boolean.TRUE.equals(o.getIsCorrect()));
                 if (!hasCorrect) {
@@ -141,8 +141,8 @@ public class QuestionController {
             }
 
             if (questionReq.getType() == Questions.Type.MCQ) {
-                if (questionReq.getOptions() == null || questionReq.getOptions().isEmpty()) {
-                    return ResponseEntity.badRequest().body(new Default("Options are required for MCQ", false, null, null));
+                if (questionReq.getOptions() == null || questionReq.getOptions().size() != 4) {
+                    return ResponseEntity.badRequest().body(new Default("Exactly 4 options are required for MCQ", false, null, null));
                 }
                 boolean hasCorrect = questionReq.getOptions().stream().anyMatch(o -> Boolean.TRUE.equals(o.getIsCorrect()));
                 if (!hasCorrect) {

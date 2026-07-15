@@ -7,9 +7,14 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ExamAttemptRepo extends JpaRepository<ExamAttempt, String> {
     List<ExamAttempt> findByUser_IdAndExam_Id(String user_id, String exam_id);
+
+    List<ExamAttempt> findByExam_IdAndIsCompletedTrueOrderByCreatedAtDesc(String examId);
+
+    Optional<ExamAttempt> findByIdAndIsCompletedTrue(String id);
 
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)

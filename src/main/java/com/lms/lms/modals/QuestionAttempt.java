@@ -9,6 +9,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.util.Date;
+import java.math.BigDecimal;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -23,6 +24,15 @@ public class QuestionAttempt {
 
     @Column(nullable = false)
     private String answer;
+
+    private BigDecimal awardedMarks;
+
+    @Column(columnDefinition = "TEXT")
+    private String feedback;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "exam_attempt_id")
+    private ExamAttempt examAttempt;
 
     @ManyToOne
     @JoinColumn(name = "question_id", nullable = false)
