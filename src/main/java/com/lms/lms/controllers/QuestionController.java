@@ -89,6 +89,11 @@ public class QuestionController {
                         .body(new Default("You are not authorized to manage this exam", false, null, null));
             }
 
+            if (ExamDetails.getStatus() != Exam.Staus.DRAFT) {
+                return ResponseEntity.badRequest().body(new Default(
+                        "Questions cannot be added to a published exam. Only exams in DRAFT can be modified.", false, null, null));
+            }
+
             if (questionReq.getType() == Questions.Type.MCQ) {
                 if (questionReq.getOptions() == null || questionReq.getOptions().size() != 4) {
                     return ResponseEntity.badRequest().body(new Default("Exactly 4 options are required for MCQ", false, null, null));
@@ -140,6 +145,11 @@ public class QuestionController {
                         .body(new Default("You are not authorized to manage this exam", false, null, null));
             }
 
+            if (QuestionDetails.getExam().getStatus() != Exam.Staus.DRAFT) {
+                return ResponseEntity.badRequest().body(new Default(
+                        "Questions of a published exam cannot be edited. Only exams in DRAFT can be modified.", false, null, null));
+            }
+
             if (questionReq.getType() == Questions.Type.MCQ) {
                 if (questionReq.getOptions() == null || questionReq.getOptions().size() != 4) {
                     return ResponseEntity.badRequest().body(new Default("Exactly 4 options are required for MCQ", false, null, null));
@@ -187,6 +197,11 @@ public class QuestionController {
             if (!this.canManageExam(QuestionDetails.getExam())) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(new Default("You are not authorized to manage this exam", false, null, null));
+            }
+
+            if (QuestionDetails.getExam().getStatus() != Exam.Staus.DRAFT) {
+                return ResponseEntity.badRequest().body(new Default(
+                        "Questions of a published exam cannot be deleted. Only exams in DRAFT can be modified.", false, null, null));
             }
 
             questionRepo.delete(QuestionDetails);

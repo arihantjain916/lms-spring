@@ -235,6 +235,12 @@ public class ExamController {
                         .body(new Default("You are not authorized to manage this course", false, null, null));
             }
 
+            // once an exam leaves DRAFT (e.g. published) its content is locked and cannot be edited
+            if (examDetails.getStatus() != Exam.Staus.DRAFT) {
+                return ResponseEntity.badRequest().body(new Default(
+                        "A published exam cannot be edited. Only exams in DRAFT can be modified.", false, null, null));
+            }
+
             examDetails.setShuffleQuestions(Boolean.TRUE.equals(examReq.getShuffleQuestions()) || examReq.getShuffleQuestions() == null);
             examDetails.setShowScoreImmediately(Boolean.TRUE.equals(examReq.getShowScoreImmediately()));
             examDetails.setMaxAttempts(examReq.getMaxAttempts());
