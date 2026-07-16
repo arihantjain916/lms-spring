@@ -215,10 +215,12 @@ public class GradingController {
     }
 
     private SubmittedAnswerRes toAnswer(QuestionAttempt answer) {
+        Questions question = answer.getQuestions();
         return new SubmittedAnswerRes(
-                answer.getId(), answer.getQuestions().getId(), answer.getQuestions().getType().name(),
-                answer.getQuestions().getTitle(), displayAnswer(answer.getQuestions(), answer.getAnswer()),
-                answer.getQuestions().getMarks(),
+                answer.getId(), question.getId(), question.getType().name(),
+                question.getTitle(), displayAnswer(question, answer.getAnswer()),
+                question.getType() == Questions.Type.MCQ ? answer.getAnswer() : null,
+                question.getMarks(),
                 answer.getAwardedMarks(), answer.getFeedback());
     }
 

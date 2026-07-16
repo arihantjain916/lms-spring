@@ -6,6 +6,7 @@ import com.lms.lms.dto.response.Default;
 import com.lms.lms.dto.response.ReportCardRes;
 import com.lms.lms.dto.response.StudentResultAnswerRes;
 import com.lms.lms.dto.response.StudentResultDetailRes;
+import com.lms.lms.dto.response.StudentResultOptionRes;
 import com.lms.lms.mappers.ReportMapper;
 import com.lms.lms.modals.Exam;
 import com.lms.lms.modals.ReportCard;
@@ -287,10 +288,28 @@ public class ReportController {
                 question.getDescription(),
                 displayAnswer(question, attempt.getAnswer()),
                 correctAnswer(question),
+                optionsOf(question, attempt.getAnswer()),
                 question.getMarks(),
                 awardedMarks,
                 feedback
         );
+    }
+
+    /**
+     * The full option set for an MCQ, flagging which one the learner picked and which is
+     * right. Empty for every other type: only MCQ carries options.
+     */
+    private List<StudentResultOptionRes> optionsOf(Questions question, String answer) {
+        if (question.getType() != Questions.Type.MCQ) {
+            return List.of();
+        }
+        return question.getOptions().stream()
+                .map(option -> new StudentResultOptionRes(
+                        option.getOption(),
+                        // answer holds the option id; null when the question was skipped
+                        option.getId().equals(answer),
+                        Boolean.TRUE.equals(option.getIsCorrect())))
+                .toList();
     }
 
     private ExamAttempt.GradingStatus effectiveStatus(
