@@ -135,7 +135,7 @@ public class ExamController {
             Exam exam = new Exam();
             exam.setCourses(course);
             exam.setShuffleQuestions(Boolean.TRUE.equals(examReq.getShuffleQuestions()) || examReq.getShuffleQuestions() == null);
-            exam.setShowScoreImmediately(Boolean.TRUE.equals(examReq.getShowScoreImmediately()) || examReq.getShuffleQuestions() == null);
+            exam.setShowScoreImmediately(Boolean.TRUE.equals(examReq.getShowScoreImmediately()));
             exam.setMaxAttempts(examReq.getMaxAttempts());
             exam.setTitle(examReq.getTitle());
             exam.setStartsAt(convertStringToInstant(examReq.getStartsAt()));
@@ -174,6 +174,43 @@ public class ExamController {
                 return ResponseEntity.badRequest().body(new Default("Invalid Status. Status Include DRAFT, UnPUBLISHED,PUBLISHED, ARCHIVED", true, null, null));
             }
 
+            // an exam can only leave DRAFT for PUBLISHED once its questions add up to the declared total marks;
+            // otherwise it stays in DRAFT
+            if (ExamStatus == Exam.Staus.PUBLISHED) {
+                List<Questions> questions = questionRepo.findByExam_Id(examId);
+
+                // an exam must have at least one question before it can be published
+                if (questions.isEmpty()) {
+                    return ResponseEntity.badRequest().body(new Default(
+                            "Exam must have at least one question before it can be published. Exam remains in DRAFT.",
+                            false, null, null));
+                }
+
+                BigDecimal questionMarksTotal = questions.stream()
+                        .map(Questions::getMarks)
+                        .filter(m -> m != null)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                BigDecimal examTotalMarks = examDetails.getTotalMarks() == null
+                        ? BigDecimal.ZERO
+                        : BigDecimal.valueOf(examDetails.getTotalMarks());
+
+                if (questionMarksTotal.compareTo(examTotalMarks) != 0) {
+                    return ResponseEntity.badRequest().body(new Default(
+                            "Exam total marks (" + examTotalMarks + ") do not match the sum of question marks ("
+                                    + questionMarksTotal + "). Exam remains in DRAFT.",
+                            false, null, null));
+                }
+
+                // only MCQ and TRUE_FALSE are auto-graded; if any other type exists the score cannot be shown immediately
+                boolean hasNonAutoGradable = questions.stream()
+                        .anyMatch(q -> q.getType() != Questions.Type.MCQ && q.getType() != Questions.Type.TRUE_FALSE);
+                if (hasNonAutoGradable && examDetails.isShowScoreImmediately()) {
+                    examDetails.setShowScoreImmediately(false);
+                    examRepo.save(examDetails);
+                }
+            }
+
             examRepo.updateStaus(examId, ExamStatus);
             return ResponseEntity.ok().body(new Default("Status Updated Successfully", true, null, null));
         } catch (Exception ex) {
@@ -199,7 +236,7 @@ public class ExamController {
             }
 
             examDetails.setShuffleQuestions(Boolean.TRUE.equals(examReq.getShuffleQuestions()) || examReq.getShuffleQuestions() == null);
-            examDetails.setShowScoreImmediately(Boolean.TRUE.equals(examReq.getShowScoreImmediately()) || examReq.getShuffleQuestions() == null);
+            examDetails.setShowScoreImmediately(Boolean.TRUE.equals(examReq.getShowScoreImmediately()));
             examDetails.setMaxAttempts(examReq.getMaxAttempts());
             examDetails.setTitle(examReq.getTitle());
             examDetails.setStartsAt(convertStringToInstant(examReq.getStartsAt()));
