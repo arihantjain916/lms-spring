@@ -22,9 +22,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker("/topic");
+        // /queue backs per-user delivery (convertAndSendToUser); /topic stays for broadcasts
+        config.enableSimpleBroker("/topic", "/queue");
         config.setApplicationDestinationPrefixes("/app");
-
+        // clients subscribe to /user/queue/... and the broker resolves it to their own session
+        config.setUserDestinationPrefix("/user");
     }
 
     @Override

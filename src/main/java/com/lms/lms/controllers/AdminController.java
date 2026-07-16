@@ -2,28 +2,36 @@ package com.lms.lms.controllers;
 
 import com.lms.lms.GlobalValue.UserDetails;
 import com.lms.lms.dto.request.ApplicationStatusReq;
+import com.lms.lms.dto.request.BroadcastReq;
 import com.lms.lms.dto.request.UserRoleReq;
 import com.lms.lms.dto.request.UserStatusReq;
 import com.lms.lms.dto.response.AdminEnrollmentRes;
 import com.lms.lms.dto.response.AdminUserRes;
 import com.lms.lms.dto.response.CertificateRes;
 import com.lms.lms.dto.response.ContactRes;
+import com.lms.lms.dto.response.ConversationRes;
 import com.lms.lms.dto.response.Default;
+import com.lms.lms.dto.response.MessageRes;
 import com.lms.lms.dto.response.OrderRes;
 import com.lms.lms.dto.response.PaginatedResponse;
 import com.lms.lms.mappers.BlogCommentMapper;
 import com.lms.lms.mappers.RatingMapper;
 import com.lms.lms.modals.Certificate;
 import com.lms.lms.modals.ContactUs;
+import com.lms.lms.modals.Conversation;
 import com.lms.lms.modals.Enrollment;
+import com.lms.lms.modals.Message;
+import com.lms.lms.modals.Notification;
 import com.lms.lms.modals.Payments;
 import com.lms.lms.modals.User;
 import com.lms.lms.repo.BlogCommentRepo;
 import com.lms.lms.repo.BlogRepo;
 import com.lms.lms.repo.CertificateRepo;
 import com.lms.lms.repo.ContactRepo;
+import com.lms.lms.repo.ConversationRepo;
 import com.lms.lms.repo.CoursesRepo;
 import com.lms.lms.repo.EnrollmentRepo;
+import com.lms.lms.repo.MessageRepo;
 import com.lms.lms.repo.PaymentRepo;
 import com.lms.lms.repo.ProgramRepo;
 import com.lms.lms.repo.RatingRepo;
@@ -31,6 +39,8 @@ import com.lms.lms.repo.ReviewRepo;
 import com.lms.lms.repo.TutorialRepo;
 import com.lms.lms.repo.UserRepo;
 import com.lms.lms.repo.WebinarRepo;
+import com.lms.lms.service.MessagingService;
+import com.lms.lms.service.NotificationService;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -99,6 +109,18 @@ public class AdminController {
 
     @Autowired
     private UserDetails userDetails;
+
+    @Autowired
+    private ConversationRepo conversationRepo;
+
+    @Autowired
+    private MessageRepo messageRepo;
+
+    @Autowired
+    private MessagingService messagingService;
+
+    @Autowired
+    private NotificationService notificationService;
 
     // ---------------------------------------------------------------- Users
 
@@ -498,6 +520,127 @@ public class AdminController {
         }
     }
 
+    // ------------------------------------------------------- Conversations
+
+    /**
+     * Moderation view over every thread. Read-only by design: admins reply to support
+     * tickets through /conversations/{id}/messages, and cannot post into private
+     * student<->instructor threads at all.
+     */
+    @GetMapping("/conversations")
+    public ResponseEntity<?> getConversations(
+            @RequestParam(required = false) Conversation.Type type,
+            @RequestParam(required = false) Conversation.Status status,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        try {
+            User admin = userDetails.userDetails();
+            int pageNumber = page > 0 ? page - 1 : 0;
+            Pageable pageable = PageRequest.of(pageNumber, limit, Sort.by("lastMessageAt").descending());
+
+            Page<Conversation> conversations = conversationRepo.adminSearch(type, status, pageable);
+            List<ConversationRes> data = conversations.getContent().stream()
+                    .map(c -> ConversationRes.from(c, messagingService.unreadCount(c, admin)))
+                    .toList();
+
+            return ResponseEntity.ok().body(new PaginatedResponse<>(
+                    "Conversations Fetched Successfully", true, data,
+                    conversations.getNumber() + 1, conversations.getSize(),
+                    conversations.getTotalElements(), conversations.getTotalPages()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    @GetMapping("/conversations/{id}")
+    public ResponseEntity<Default> getConversation(@PathVariable String id) {
+        try {
+            User admin = userDetails.userDetails();
+            Conversation conversation = messagingService.getForModeration(id);
+            return ResponseEntity.ok(new Default("Conversation Fetched Successfully", true, null,
+                    ConversationRes.from(conversation, messagingService.unreadCount(conversation, admin))));
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    /** Does not mark anything read: looking at a thread as a moderator is not "receiving" it. */
+    @GetMapping("/conversations/{id}/messages")
+    public ResponseEntity<?> getConversationMessages(
+            @PathVariable String id,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "30") int limit
+    ) {
+        try {
+            Conversation conversation = messagingService.getForModeration(id);
+            int pageNumber = page > 0 ? page - 1 : 0;
+            Pageable pageable = PageRequest.of(pageNumber, limit, Sort.by("createdAt").descending());
+
+            Page<Message> messages = messageRepo.findByConversation_Id(conversation.getId(), pageable);
+            List<MessageRes> data = messages.getContent().stream().map(MessageRes::from).toList();
+
+            return ResponseEntity.ok().body(new PaginatedResponse<>(
+                    "Messages Fetched Successfully", true, data,
+                    messages.getNumber() + 1, messages.getSize(),
+                    messages.getTotalElements(), messages.getTotalPages()));
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    @DeleteMapping("/conversations/{id}")
+    @Transactional
+    public ResponseEntity<Default> deleteConversation(@PathVariable String id) {
+        try {
+            // messages FK the conversation, so the service clears them first
+            messagingService.deleteConversation(id);
+            return ResponseEntity.ok(new Default("Conversation Deleted Successfully", true, null, null));
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    @DeleteMapping("/messages/{id}")
+    @Transactional
+    public ResponseEntity<Default> deleteMessage(@PathVariable String id) {
+        try {
+            if (!messageRepo.existsById(id)) {
+                return new ResponseEntity<>(new Default("Message Not Found", false, null, null), HttpStatus.NOT_FOUND);
+            }
+            messageRepo.deleteById(id);
+            return ResponseEntity.ok(new Default("Message Deleted Successfully", true, null, null));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    // ------------------------------------------------------- Notifications
+
+    /** Pushes an announcement to every active user, or to a single role. */
+    @PostMapping("/notifications/broadcast")
+    public ResponseEntity<Default> broadcast(@Valid @RequestBody BroadcastReq req) {
+        try {
+            int sent = notificationService.broadcast(
+                    req.getRole(),
+                    Notification.Type.ANNOUNCEMENT,
+                    req.getTitle(),
+                    req.getBody(),
+                    req.getLink());
+
+            return ResponseEntity.ok(new Default("Announcement Sent Successfully", true, null,
+                    Map.of("recipients", sent)));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
     // ----------------------------------------------------------- Dashboard
 
     @GetMapping("/dashboard")
@@ -535,6 +678,18 @@ public class AdminController {
             engagement.put("blogComments", blogCommentRepo.count());
             engagement.put("contactSubmissions", contactRepo.count());
             stats.put("engagement", engagement);
+
+            Map<String, Object> support = new LinkedHashMap<>();
+            support.put("openTickets", conversationRepo.countByTypeAndStatus(
+                    Conversation.Type.SUPPORT, Conversation.Status.OPEN));
+            support.put("closedTickets", conversationRepo.countByTypeAndStatus(
+                    Conversation.Type.SUPPORT, Conversation.Status.CLOSED));
+            // open tickets whose latest user message nobody on the care team has read yet
+            support.put("awaitingReply", conversationRepo.countAwaitingReply(
+                    Conversation.Type.SUPPORT, Conversation.Status.OPEN));
+            support.put("conversations", conversationRepo.count());
+            support.put("messages", messageRepo.count());
+            stats.put("support", support);
 
             return ResponseEntity.ok(new Default("Dashboard Stats Fetched Successfully", true, null, stats));
         } catch (Exception e) {

@@ -7,8 +7,10 @@ import com.lms.lms.dto.response.EnrollmentRes;
 import com.lms.lms.dto.response.PaginatedResponse;
 import com.lms.lms.modals.Courses;
 import com.lms.lms.modals.Enrollment;
+import com.lms.lms.modals.Notification;
 import com.lms.lms.repo.CoursesRepo;
 import com.lms.lms.repo.EnrollmentRepo;
+import com.lms.lms.service.NotificationService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -34,6 +36,9 @@ public class EnrollmentController {
     @Autowired
     private CoursesRepo coursesRepo;
 
+    @Autowired
+    private NotificationService notificationService;
+
     @GetMapping("{courseId}")
     public ResponseEntity<Default> enrollStudent(@PathVariable Long courseId) {
         try {
@@ -52,6 +57,16 @@ public class EnrollmentController {
             enrollment.setCourses(courses);
             enrollment.setUser(user);
             enrollmentRepo.save(enrollment);
+
+            notificationService.notify(user, Notification.Type.ENROLLMENT,
+                    "You are enrolled in " + courses.getTitle(),
+                    "Your enrolment is confirmed. Start learning whenever you are ready.",
+                    "/courses/" + courses.getId(), String.valueOf(courses.getId()));
+
+            notificationService.notify(courses.getUser(), Notification.Type.ENROLLMENT,
+                    "New enrolment in " + courses.getTitle(),
+                    user.getName() + " enrolled in your course.",
+                    "/courses/" + courses.getId(), String.valueOf(courses.getId()));
 
             return ResponseEntity.ok().body(new Default("Student Enroll Successfully", true, null, null));
         } catch (Exception e) {
