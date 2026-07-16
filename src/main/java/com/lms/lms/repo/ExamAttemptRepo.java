@@ -16,6 +16,9 @@ public interface ExamAttemptRepo extends JpaRepository<ExamAttempt, String> {
 
     Optional<ExamAttempt> findByIdAndIsCompletedTrue(String id);
 
+    Optional<ExamAttempt> findFirstByUser_IdAndExam_IdAndIsCompletedTrueOrderByUpdatedAtDesc(
+            String userId, String examId);
+
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Transactional

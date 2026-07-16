@@ -6,10 +6,12 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
+import org.springframework.security.authentication.AccountStatusUserDetailsChecker;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsChecker;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -26,6 +28,8 @@ public class JwtService {
 
     @Autowired
     ApplicationContext context;
+
+    private static final UserDetailsChecker accountStatusChecker = new AccountStatusUserDetailsChecker();
 
     public String generateToken(String id, String userAgent, String ipAddress){
 
@@ -90,6 +94,10 @@ public class JwtService {
         var id = extractUsername(token);
 
         UserDetails userDetails = context.getBean(UserDetailsService.class).loadUserById(id);
+
+        // same re-check as JwtFilter: a banned or deactivated account must not be able to
+        // open a websocket with a token issued before the ban
+        accountStatusChecker.check(userDetails);
 
         if (!validateToken(token, userDetails)) {
             throw new BadCredentialsException("Invalid JWT token");

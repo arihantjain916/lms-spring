@@ -56,6 +56,8 @@ public class ConversationController {
                     ConversationRes.from(conversation, messagingService.unreadCount(conversation, user))), HttpStatus.CREATED);
         } catch (SecurityException e) {
             return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.FORBIDDEN);
+        } catch (IllegalStateException e) {
+            return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.TOO_MANY_REQUESTS);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
@@ -79,6 +81,8 @@ public class ConversationController {
                     ConversationRes.from(conversation, messagingService.unreadCount(conversation, user))), HttpStatus.CREATED);
         } catch (SecurityException e) {
             return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.FORBIDDEN);
+        } catch (IllegalStateException e) {
+            return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.TOO_MANY_REQUESTS);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
@@ -172,6 +176,8 @@ public class ConversationController {
                     MessageRes.from(message)), HttpStatus.CREATED);
         } catch (SecurityException e) {
             return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.FORBIDDEN);
+        } catch (IllegalStateException e) {
+            return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.TOO_MANY_REQUESTS);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {

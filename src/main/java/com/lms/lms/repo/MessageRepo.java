@@ -15,6 +15,10 @@ public interface MessageRepo extends JpaRepository<Message, String> {
 
     Page<Message> findByConversation_Id(String conversationId, Pageable pageable);
 
+    // backs the anti-spam cap; counted off the messages themselves so there is no
+    // separate usage counter to drift out of sync
+    long countBySender_IdAndCreatedAtAfter(String senderId, Date since);
+
     // messages FK the conversation, so they go first when an admin deletes a thread
     @Transactional
     @Modifying(clearAutomatically = true)

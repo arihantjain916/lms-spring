@@ -18,6 +18,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
 
@@ -39,6 +41,10 @@ public class MessagingService {
     private static final Logger log = LoggerFactory.getLogger(MessagingService.class);
 
     public static final String MESSAGE_QUEUE = "/queue/messages";
+
+    // Anti-spam cap on the student side. Staff are exempt: an instructor answering a
+    // cohort or an admin working the support queue legitimately sends a lot.
+    private static final int STUDENT_DAILY_MESSAGE_LIMIT = 100;
 
     @Autowired
     private ConversationRepo conversationRepo;
@@ -195,6 +201,7 @@ public class MessagingService {
         if (!canAccess(conversation, sender)) {
             throw new SecurityException("You do not have access to this conversation");
         }
+        enforceDailyLimit(sender);
 
         // a reply to a resolved thread reopens it rather than being rejected
         if (conversation.getStatus() == Conversation.Status.CLOSED) {
@@ -212,6 +219,24 @@ public class MessagingService {
 
         deliver(conversation, saved, sender);
         return saved;
+    }
+
+    /**
+     * Caps how many messages a student can send per rolling 24 hours, so one account
+     * cannot flood an instructor or bury the support queue.
+     *
+     * @throws IllegalStateException when the cap is hit; the controller maps this to 429
+     */
+    private void enforceDailyLimit(User sender) {
+        if (sender.getRole() != User.Role.STUDENT) {
+            return;
+        }
+        Date since = Date.from(Instant.now().minus(1, ChronoUnit.DAYS));
+        long sent = messageRepo.countBySender_IdAndCreatedAtAfter(sender.getId(), since);
+        if (sent >= STUDENT_DAILY_MESSAGE_LIMIT) {
+            throw new IllegalStateException(
+                    "Daily message limit reached (" + STUDENT_DAILY_MESSAGE_LIMIT + "). Please try again later.");
+        }
     }
 
     /** Pushes the message to the other side's socket and raises their in-app notification. */

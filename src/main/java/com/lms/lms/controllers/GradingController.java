@@ -9,13 +9,17 @@ import com.lms.lms.dto.response.SubmissionSummaryRes;
 import com.lms.lms.dto.response.SubmittedAnswerRes;
 import com.lms.lms.modals.Exam;
 import com.lms.lms.modals.ExamAttempt;
+import com.lms.lms.modals.Notification;
 import com.lms.lms.modals.QuestionAttempt;
+import com.lms.lms.modals.QuestionOptions;
+import com.lms.lms.modals.Questions;
 import com.lms.lms.modals.ReportCard;
 import com.lms.lms.modals.User;
 import com.lms.lms.repo.ExamAttemptRepo;
 import com.lms.lms.repo.ExamRepo;
 import com.lms.lms.repo.QuestionAttemptRepo;
 import com.lms.lms.repo.ReportCardRepo;
+import com.lms.lms.service.NotificationService;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -44,17 +48,20 @@ public class GradingController {
     private final QuestionAttemptRepo questionAttemptRepo;
     private final ReportCardRepo reportCardRepo;
     private final UserDetails userDetails;
+    private final NotificationService notificationService;
 
     public GradingController(ExamRepo examRepo,
                              ExamAttemptRepo examAttemptRepo,
                              QuestionAttemptRepo questionAttemptRepo,
                              ReportCardRepo reportCardRepo,
-                             UserDetails userDetails) {
+                             UserDetails userDetails,
+                             NotificationService notificationService) {
         this.examRepo = examRepo;
         this.examAttemptRepo = examAttemptRepo;
         this.questionAttemptRepo = questionAttemptRepo;
         this.reportCardRepo = reportCardRepo;
         this.userDetails = userDetails;
+        this.notificationService = notificationService;
     }
 
     @GetMapping("/exams/{examId}/submissions")
@@ -185,6 +192,15 @@ public class GradingController {
         attempt.setGradedBy(userDetails.userDetails());
         examAttemptRepo.save(attempt);
 
+        notificationService.notify(
+                attempt.getUser(),
+                Notification.Type.EXAM_GRADED,
+                "Your result for " + attempt.getExam().getTitle() + " is ready",
+                "You scored " + obtainedMarks + "/" + totalMarks + " (" + percentage + "%), grade "
+                        + reportCard.getGrade() + ".",
+                "/exams/" + attempt.getExam().getId() + "/result",
+                attempt.getId());
+
         return ResponseEntity.ok(new Default("Grading finalized successfully", true, null, toDetail(attempt)));
     }
 
@@ -201,8 +217,18 @@ public class GradingController {
     private SubmittedAnswerRes toAnswer(QuestionAttempt answer) {
         return new SubmittedAnswerRes(
                 answer.getId(), answer.getQuestions().getId(), answer.getQuestions().getType().name(),
-                answer.getQuestions().getTitle(), answer.getAnswer(), answer.getQuestions().getMarks(),
+                answer.getQuestions().getTitle(), displayAnswer(answer.getQuestions(), answer.getAnswer()),
+                answer.getQuestions().getMarks(),
                 answer.getAwardedMarks(), answer.getFeedback());
+    }
+
+    private String displayAnswer(Questions question, String answer) {
+        if (answer == null || question.getType() != Questions.Type.MCQ) return answer;
+        return question.getOptions().stream()
+                .filter(option -> option.getId().equals(answer))
+                .map(QuestionOptions::getOption)
+                .findFirst()
+                .orElse(answer);
     }
 
     private ExamAttempt.GradingStatus statusOf(ExamAttempt attempt) {

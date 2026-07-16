@@ -40,7 +40,9 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        // null-safe on purpose: rows predating these flags have NULL, and must not be
+        // read as "banned" — that would lock out every legacy account at once
+        return !Boolean.TRUE.equals(user.getIsBanned());
     }
 
     @Override
@@ -50,6 +52,6 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return !Boolean.TRUE.equals(user.getIsDeleted()) && !Boolean.FALSE.equals(user.getIsActive());
     }
 }

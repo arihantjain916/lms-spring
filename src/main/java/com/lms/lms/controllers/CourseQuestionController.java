@@ -9,6 +9,7 @@ import com.lms.lms.dto.response.QuestionReplyRes;
 import com.lms.lms.dto.response.UserRes;
 import com.lms.lms.modals.CourseQuestion;
 import com.lms.lms.modals.Courses;
+import com.lms.lms.modals.Notification;
 import com.lms.lms.modals.QuestionHelpful;
 import com.lms.lms.modals.QuestionReply;
 import com.lms.lms.modals.User;
@@ -17,6 +18,7 @@ import com.lms.lms.repo.CoursesRepo;
 import com.lms.lms.repo.EnrollmentRepo;
 import com.lms.lms.repo.QuestionHelpfulRepo;
 import com.lms.lms.repo.QuestionReplyRepo;
+import com.lms.lms.service.NotificationService;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +52,13 @@ public class CourseQuestionController {
 
     @Autowired
     private UserDetails userDetails;
+
+    @Autowired
+    private NotificationService notificationService;
+
+    private static String preview(String content) {
+        return content.length() > 120 ? content.substring(0, 120) + "..." : content;
+    }
 
     @GetMapping("/courses/{courseId}/questions")
     public ResponseEntity<?> getCourseQuestions(
@@ -113,6 +122,18 @@ public class CourseQuestionController {
             question.setUser(user);
             courseQuestionRepo.save(question);
 
+            // the instructor owns the course; no notification when they ask on their own course
+            User instructor = course.getUser();
+            if (instructor != null && !instructor.getId().equals(user.getId())) {
+                notificationService.notify(
+                        instructor,
+                        Notification.Type.COURSE_QUESTION,
+                        "New question in " + course.getTitle(),
+                        user.getName() + " asked: " + preview(question.getContent()),
+                        "/courses/" + course.getId() + "/questions/" + question.getId(),
+                        question.getId());
+            }
+
             return ResponseEntity.ok(new Default("Question Added Successfully", true, null, this.toQuestionRes(question)));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
@@ -160,6 +181,18 @@ public class CourseQuestionController {
             reply.setQuestion(question);
             reply.setUser(user);
             questionReplyRepo.save(reply);
+
+            // whoever asked wants to know it was answered; skip when they reply to themselves
+            User asker = question.getUser();
+            if (asker != null && !asker.getId().equals(user.getId())) {
+                notificationService.notify(
+                        asker,
+                        Notification.Type.COURSE_QUESTION,
+                        user.getName() + " replied to your question",
+                        preview(reply.getContent()),
+                        "/courses/" + question.getCourse().getId() + "/questions/" + question.getId(),
+                        question.getId());
+            }
 
             QuestionReplyRes res = new QuestionReplyRes(
                     reply.getId(),

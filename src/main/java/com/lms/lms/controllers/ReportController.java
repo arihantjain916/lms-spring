@@ -4,13 +4,21 @@ import com.lms.lms.GlobalValue.UserDetails;
 import com.lms.lms.dto.request.ReportCardReq;
 import com.lms.lms.dto.response.Default;
 import com.lms.lms.dto.response.ReportCardRes;
+import com.lms.lms.dto.response.StudentResultAnswerRes;
+import com.lms.lms.dto.response.StudentResultDetailRes;
 import com.lms.lms.mappers.ReportMapper;
 import com.lms.lms.modals.Exam;
 import com.lms.lms.modals.ReportCard;
+import com.lms.lms.modals.ExamAttempt;
+import com.lms.lms.modals.QuestionAttempt;
+import com.lms.lms.modals.QuestionOptions;
+import com.lms.lms.modals.Questions;
 import com.lms.lms.modals.User;
 import com.lms.lms.repo.EnrollmentRepo;
 import com.lms.lms.repo.ExamRepo;
 import com.lms.lms.repo.ReportCardRepo;
+import com.lms.lms.repo.ExamAttemptRepo;
+import com.lms.lms.repo.QuestionAttemptRepo;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -19,6 +27,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.math.BigDecimal;
 
 @RestController
 @RequestMapping("/report")
@@ -39,6 +48,12 @@ public class ReportController {
 
     @Autowired
     private ReportMapper reportMapper;
+
+    @Autowired
+    private ExamAttemptRepo examAttemptRepo;
+
+    @Autowired
+    private QuestionAttemptRepo questionAttemptRepo;
 
 
     @GetMapping("/{examId}/get")
@@ -152,6 +167,40 @@ public class ReportController {
         }
     }
 
+    /**
+     * Full learner-owned results. Unlike the grading endpoints, this never accepts
+     * a student id and can only return report cards belonging to the JWT principal.
+     */
+    @GetMapping("/me/details")
+    public ResponseEntity<Default> getMyDetailedResults() {
+        try {
+            User user = userDetails.userDetails();
+            List<StudentResultDetailRes> results = reportCardRepo.findByUser_Id(user.getId())
+                    .stream()
+                    .map(report -> toStudentResult(report, user.getId()))
+                    .toList();
+            return ResponseEntity.ok(new Default("Detailed results fetched successfully", true, null, results));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    @GetMapping("/me/{reportId}/details")
+    public ResponseEntity<Default> getMyDetailedResult(@PathVariable String reportId) {
+        try {
+            User user = userDetails.userDetails();
+            ReportCard report = reportCardRepo.findByIdAndUser_Id(reportId, user.getId()).orElse(null);
+            if (report == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(new Default("Result not found", false, null, null));
+            }
+            return ResponseEntity.ok(new Default("Detailed result fetched successfully", true, null,
+                    toStudentResult(report, user.getId())));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
     @PreAuthorize("hasAnyRole('ADMIN','INSTRUCTOR')")
     @GetMapping("/exam/{examId}")
     public ResponseEntity<Default> getReportByCourse(@PathVariable String examId) {
@@ -182,5 +231,116 @@ public class ReportController {
                 (current.getRole() == User.Role.ADMIN ||
                  (exam != null && exam.getCourses() != null && exam.getCourses().getUser() != null
                          && exam.getCourses().getUser().getId().equals(current.getId())));
+    }
+
+    private StudentResultDetailRes toStudentResult(ReportCard report, String userId) {
+        Exam exam = report.getExam();
+        ExamAttempt attempt = examAttemptRepo
+                .findFirstByUser_IdAndExam_IdAndIsCompletedTrueOrderByUpdatedAtDesc(userId, exam.getId())
+                .orElse(null);
+
+        List<StudentResultAnswerRes> answers = attempt == null
+                ? List.of()
+                : questionAttemptRepo.findByExamAttempt_IdOrderByAttemptedAtAsc(attempt.getId())
+                .stream().map(this::toStudentAnswer).toList();
+
+        ExamAttempt.GradingStatus gradingStatus = attempt == null
+                ? ExamAttempt.GradingStatus.FINALIZED
+                : effectiveStatus(attempt, answers);
+
+        return new StudentResultDetailRes(
+                report.getId(),
+                attempt == null ? null : attempt.getId(),
+                exam.getId(),
+                exam.getTitle(),
+                exam.getCourses() == null ? null : exam.getCourses().getId(),
+                exam.getCourses() == null ? null : exam.getCourses().getTitle(),
+                report.getTotalMarks(),
+                report.getObtainedMarks(),
+                report.getPercentage(),
+                report.getGrade(),
+                attempt == null ? report.getCreatedAt() : attempt.getUpdatedAt(),
+                gradingStatus,
+                attempt == null ? null : attempt.getGradingFeedback(),
+                answers
+        );
+    }
+
+    private StudentResultAnswerRes toStudentAnswer(QuestionAttempt attempt) {
+        Questions question = attempt.getQuestions();
+        BigDecimal awardedMarks = attempt.getAwardedMarks();
+        if (awardedMarks == null && isAutomaticallyGraded(question)) {
+            awardedMarks = isCorrect(question, attempt.getAnswer())
+                    ? question.getMarks() : BigDecimal.ZERO;
+        }
+
+        String feedback = attempt.getFeedback();
+        if ((feedback == null || feedback.isBlank()) && isAutomaticallyGraded(question)) {
+            feedback = isCorrect(question, attempt.getAnswer()) ? "Correct" : "Incorrect";
+        }
+
+        return new StudentResultAnswerRes(
+                attempt.getId(),
+                question.getId(),
+                question.getType().name(),
+                question.getTitle(),
+                question.getDescription(),
+                displayAnswer(question, attempt.getAnswer()),
+                correctAnswer(question),
+                question.getMarks(),
+                awardedMarks,
+                feedback
+        );
+    }
+
+    private ExamAttempt.GradingStatus effectiveStatus(
+            ExamAttempt attempt, List<StudentResultAnswerRes> answers) {
+        if (attempt.getGradingStatus() == ExamAttempt.GradingStatus.FINALIZED) {
+            return ExamAttempt.GradingStatus.FINALIZED;
+        }
+        boolean allGraded = !answers.isEmpty()
+                && answers.stream().allMatch(answer -> answer.getAwardedMarks() != null);
+        return allGraded ? ExamAttempt.GradingStatus.FINALIZED
+                : (attempt.getGradingStatus() == null
+                ? ExamAttempt.GradingStatus.PENDING : attempt.getGradingStatus());
+    }
+
+    private boolean isAutomaticallyGraded(Questions question) {
+        return question.getType() == Questions.Type.MCQ
+                || question.getType() == Questions.Type.TRUE_FALSE;
+    }
+
+    private boolean isCorrect(Questions question, String answer) {
+        if (answer == null) return false;
+        if (question.getType() == Questions.Type.MCQ) {
+            return question.getOptions().stream()
+                    .anyMatch(option -> option.getId().equals(answer)
+                            && Boolean.TRUE.equals(option.getIsCorrect()));
+        }
+        if (question.getType() == Questions.Type.TRUE_FALSE) {
+            return Boolean.parseBoolean(answer) == Boolean.TRUE.equals(question.getCorrectOption());
+        }
+        return false;
+    }
+
+    private String displayAnswer(Questions question, String answer) {
+        if (answer == null || question.getType() != Questions.Type.MCQ) return answer;
+        return question.getOptions().stream()
+                .filter(option -> option.getId().equals(answer))
+                .map(QuestionOptions::getOption)
+                .findFirst().orElse(answer);
+    }
+
+    private String correctAnswer(Questions question) {
+        if (question.getType() == Questions.Type.MCQ) {
+            return question.getOptions().stream()
+                    .filter(option -> Boolean.TRUE.equals(option.getIsCorrect()))
+                    .map(QuestionOptions::getOption)
+                    .findFirst().orElse(null);
+        }
+        if (question.getType() == Questions.Type.TRUE_FALSE) {
+            return String.valueOf(Boolean.TRUE.equals(question.getCorrectOption()));
+        }
+        return null;
     }
 }
