@@ -3,6 +3,7 @@ package com.lms.lms.controllers;
 import com.lms.lms.GlobalValue.UserDetails;
 import com.lms.lms.dto.request.ApplicationStatusReq;
 import com.lms.lms.dto.request.BroadcastReq;
+import com.lms.lms.dto.request.OrderConfirmReq;
 import com.lms.lms.dto.request.UserRoleReq;
 import com.lms.lms.dto.request.UserStatusReq;
 import com.lms.lms.dto.response.AdminEnrollmentRes;
@@ -53,6 +54,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -366,6 +368,58 @@ public class AdminController {
             return ResponseEntity.ok().body(new PaginatedResponse<>(
                     "Orders Fetched Successfully", true, orderList,
                     payments.getNumber() + 1, payments.getSize(), payments.getTotalElements(), payments.getTotalPages()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    /**
+     * Marks a PENDING order PAID and enrolls the student, for payments collected
+     * outside the app (UPI, bank transfer, cash). Mirrors the payment.success branch
+     * of the gateway webhook, and records who confirmed it against which reference.
+     */
+    @PostMapping("/orders/{orderId}/confirm")
+    @Transactional
+    public ResponseEntity<Default> confirmOrder(@PathVariable String orderId, @Valid @RequestBody OrderConfirmReq req) {
+        try {
+            User admin = userDetails.userDetails();
+            if (admin == null || admin.getIsDeleted()) {
+                return ResponseEntity.badRequest().body(new Default("User Not Found", false, null, null));
+            }
+
+            Payments payment = paymentRepo.findById(orderId).orElse(null);
+            if (payment == null) {
+                return new ResponseEntity<>(new Default("Order Not Found", false, null, null), HttpStatus.NOT_FOUND);
+            }
+
+            if (payment.getStatus() == Payments.PaymentStatus.PAID) {
+                return ResponseEntity.badRequest().body(new Default("Order Already Paid", false, null, null));
+            }
+
+            payment.setStatus(Payments.PaymentStatus.PAID);
+            payment.setPaymentReference(req.getPaymentReference());
+            payment.setConfirmedBy(admin);
+            payment.setConfirmedAt(new Date());
+            paymentRepo.save(payment);
+
+            User student = payment.getUser();
+            Boolean isUserAlreadyEnrolled = enrollmentRepo.existsByUser_IdAndCourses_Id(student.getId(), payment.getCourse().getId());
+            if (!isUserAlreadyEnrolled) {
+                Enrollment enrollment = new Enrollment();
+                enrollment.setCourses(payment.getCourse());
+                enrollment.setUser(student);
+                enrollmentRepo.save(enrollment);
+            }
+
+            notificationService.notify(
+                    student,
+                    Notification.Type.ENROLLMENT,
+                    "Payment Confirmed",
+                    "Your payment for " + payment.getCourse().getTitle() + " is confirmed. You are now enrolled.",
+                    "/courses/" + payment.getCourse().getId(),
+                    payment.getId());
+
+            return ResponseEntity.ok(new Default("Order Confirmed Successfully", true, null, this.toOrderRes(payment)));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
@@ -739,6 +793,7 @@ public class AdminController {
                 payment.getAmount(),
                 payment.getCurrency(),
                 payment.getStatus() != null ? payment.getStatus().name() : null,
+                payment.getPaymentReference(),
                 payment.getCreatedAt()
         );
     }

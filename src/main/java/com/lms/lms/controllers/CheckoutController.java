@@ -109,6 +109,7 @@ public class CheckoutController {
                 payment.getAmount(),
                 payment.getCurrency(),
                 payment.getStatus().name(),
+                payment.getPaymentReference(),
                 payment.getCreatedAt()
         );
     }

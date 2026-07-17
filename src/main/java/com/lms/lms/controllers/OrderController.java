@@ -51,6 +51,7 @@ public class OrderController {
                     payment.getAmount(),
                     payment.getCurrency(),
                     payment.getStatus().name(),
+                    payment.getPaymentReference(),
                     payment.getCreatedAt()
             );
             return ResponseEntity.ok(new Default("Order Fetched Successfully", true, null, res));

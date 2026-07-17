@@ -16,5 +16,6 @@ public class OrderRes {
     private Double amount;
     private String currency;
     private String status;
+    private String paymentReference;
     private Date createdAt;
 }

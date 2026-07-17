@@ -41,6 +41,16 @@ public class Payments {
     @Enumerated(EnumType.STRING)
     private PaymentStatus status = PaymentStatus.PENDING;
 
+    // gateway transaction id, or the UPI/bank reference an admin recorded when
+    // confirming an offline payment by hand
+    private String paymentReference;
+
+    // set only on manually confirmed orders; null when the webhook marked it PAID
+    @ManyToOne
+    @JoinColumn(name = "confirmed_by_id")
+    private User confirmedBy;
+
+    private Date confirmedAt;
 
     @Column(nullable = false, updatable = false)
     @CreationTimestamp
