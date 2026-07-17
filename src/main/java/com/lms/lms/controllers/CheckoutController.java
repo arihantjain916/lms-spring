@@ -71,6 +71,27 @@ public class CheckoutController {
                 plan = pricingRepo.findFirstByCourses_IdOrderByPriceAsc(course.getId()).orElse(null);
             }
 
+            // Reuse an unfinished checkout instead of creating duplicate pending orders
+            // when the learner clicks Buy again for the same course and plan.
+            if (plan != null && plan.getPrice() > 0) {
+                Payments pendingPayment = paymentRepo
+                        .findFirstByUser_IdAndCourse_IdAndPricingPlan_IdAndStatusOrderByCreatedAtDesc(
+                                user.getId(),
+                                course.getId(),
+                                plan.getId(),
+                                Payments.PaymentStatus.PENDING
+                        )
+                        .orElse(null);
+                if (pendingPayment != null) {
+                    return ResponseEntity.ok().body(new Default(
+                            "Pending Checkout Already Exists",
+                            true,
+                            null,
+                            this.toOrderRes(pendingPayment)
+                    ));
+                }
+            }
+
             Payments payment = new Payments();
             payment.setUser(user);
             payment.setCourse(course);

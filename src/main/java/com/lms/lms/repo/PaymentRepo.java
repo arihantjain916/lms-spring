@@ -6,9 +6,18 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.Optional;
+
 public interface PaymentRepo extends JpaRepository<Payments, String> {
 
     Page<Payments> findByStatus(Payments.PaymentStatus status, Pageable pageable);
+
+    Optional<Payments> findFirstByUser_IdAndCourse_IdAndPricingPlan_IdAndStatusOrderByCreatedAtDesc(
+            String userId,
+            Long courseId,
+            String pricingPlanId,
+            Payments.PaymentStatus status
+    );
 
     long countByStatus(Payments.PaymentStatus status);
 
