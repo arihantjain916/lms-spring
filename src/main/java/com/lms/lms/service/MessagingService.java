@@ -154,10 +154,7 @@ public class MessagingService {
         }
 
         Courses course = null;
-        if (recipient.getRole() == User.Role.INSTRUCTOR) {
-            if (courseId == null) {
-                throw new IllegalArgumentException("courseId is required when messaging an instructor");
-            }
+        if (courseId != null) {
             course = coursesRepo.findById(courseId)
                     .orElseThrow(() -> new IllegalArgumentException("Course not found"));
 
@@ -169,6 +166,8 @@ public class MessagingService {
             if (!enrolled && !course.getUser().getId().equals(initiator.getId())) {
                 throw new IllegalArgumentException("You must be enrolled in this course to message its instructor");
             }
+        } else if (recipient.getRole() == User.Role.INSTRUCTOR) {
+            throw new IllegalArgumentException("courseId is required when messaging an instructor");
         }
 
         Courses resolvedCourse = course;
