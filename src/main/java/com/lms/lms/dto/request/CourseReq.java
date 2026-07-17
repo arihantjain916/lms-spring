@@ -1,5 +1,6 @@
 package com.lms.lms.dto.request;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
@@ -25,6 +26,16 @@ public class CourseReq {
 
     @Pattern(regexp = "BEGINNER|INTERMEDIATE|ADVANCED|ALL_LEVELS", message = "Level must be one of BEGINNER, INTERMEDIATE, ADVANCED, ALL_LEVELS")
     private String level;
+
+    // Seeds the course's first pricing plan on create only. Omit for a free course.
+    // Later plan changes go through /pricing; these fields are ignored by /course/update.
+    @Min(value = 0, message = "Price must be 0 or greater")
+    private Double price;
+
+    private String currency;
+
+    @Pattern(regexp = "MONTHLY|QUARTERLY|YEARLY|LIFETIME", message = "Plan type must be one of MONTHLY, QUARTERLY, YEARLY, LIFETIME")
+    private String planType;
 
     private Long id;
 

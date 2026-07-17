@@ -37,6 +37,7 @@ public class Pricing_Plans {
     private Double price;
 
     @Column(nullable = false)
+    @Enumerated(value = EnumType.STRING)
     private PlanType planType;
 
     @ManyToOne
@@ -55,7 +56,7 @@ public class Pricing_Plans {
     public enum PlanType {
         MONTHLY(1),
         QUARTERLY(2),
-        YEARLY(2),
+        YEARLY(3),
         LIFETIME(0);
 
         private final int value;

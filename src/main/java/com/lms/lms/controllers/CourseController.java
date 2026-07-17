@@ -6,9 +6,11 @@ import com.lms.lms.dto.response.Default;
 import com.lms.lms.dto.response.PaginatedResponse;
 import com.lms.lms.mappers.CourseMapper;
 import com.lms.lms.modals.Courses;
+import com.lms.lms.modals.Pricing_Plans;
 import com.lms.lms.modals.Review;
 import com.lms.lms.modals.User;
 import com.lms.lms.repo.*;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -188,6 +190,7 @@ public class CourseController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
     @PostMapping("/add")
+    @Transactional
     public ResponseEntity<?> addCourse(@Valid @RequestBody CourseReq courses){
         try{
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -224,6 +227,20 @@ public class CourseController {
                 course.setLevel(Courses.Level.valueOf(courses.getLevel()));
             }
             coursesRepo.save(course);
+
+            // a course with no plan is treated as free at checkout, so only seed a plan when a price was given
+            if (courses.getPrice() != null) {
+                Pricing_Plans plan = new Pricing_Plans();
+                plan.setCourses(course);
+                plan.setTitle(course.getTitle());
+                plan.setDescription(course.getDescription());
+                plan.setPrice(courses.getPrice());
+                plan.setCurrency(courses.getCurrency() == null || courses.getCurrency().isBlank() ? "INR" : courses.getCurrency());
+                plan.setPlanType(courses.getPlanType() == null || courses.getPlanType().isBlank()
+                        ? Pricing_Plans.PlanType.LIFETIME
+                        : Pricing_Plans.PlanType.valueOf(courses.getPlanType()));
+                pricingRepo.save(plan);
+            }
 
             return ResponseEntity.ok().body(new Default("Course Added Successfully", true, null, null));
         } catch (Exception e) {

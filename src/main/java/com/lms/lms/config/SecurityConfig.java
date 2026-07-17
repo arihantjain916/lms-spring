@@ -71,7 +71,7 @@ public class SecurityConfig {
                         // user-context GET endpoints must stay authenticated even though they sit under public GET prefixes.
                         // ordered before the permitAll wildcards below so first-match-wins keeps them protected.
                         .requestMatchers(HttpMethod.GET, "/course/me", "/blog/me", "/tutorials/me", "/courses/*/progress").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/course/**", "/courses/**", "/category/**", "/ratings/**", "/blog/**", "/webhook/**", "/certificates/**", "/questions/**", "/webinars/**", "/search/**", "/tutorials/**", "/programs/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/course/**", "/courses/**", "/category/**", "/ratings/**", "/blog/**", "/webhook/**", "/certificates/**", "/questions/**", "/webinars/**", "/search/**", "/tutorials/**", "/programs/**", "/pricing/course/**").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex.accessDeniedHandler(customAccessDeniedHandler)
                         .authenticationEntryPoint(customAuthenticationEntryPoint)
