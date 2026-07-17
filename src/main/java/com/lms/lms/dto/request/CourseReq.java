@@ -27,12 +27,11 @@ public class CourseReq {
     @Pattern(regexp = "BEGINNER|INTERMEDIATE|ADVANCED|ALL_LEVELS", message = "Level must be one of BEGINNER, INTERMEDIATE, ADVANCED, ALL_LEVELS")
     private String level;
 
-    // Prices the course on create only; later plan changes go through /pricing, and
-    // /course/update ignores all three. Omit both for a free course.
-    // Attaches an existing reusable plan. Takes precedence over price/currency/planType.
+    // Attaches an existing reusable plan. Create only, and takes precedence over price.
     private String pricingPlanId;
 
-    // Creates a new plan for this course alone.
+    // Prices the course with a plan of its own. On create it makes one; on update it edits
+    // the course's plan, or makes one if the course has none. Omit for a free course.
     @Min(value = 0, message = "Price must be 0 or greater")
     private Double price;
 

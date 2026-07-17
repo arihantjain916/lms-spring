@@ -1,5 +1,6 @@
 package com.lms.lms.controllers;
 
+import com.lms.lms.dto.request.CoursePricingReq;
 import com.lms.lms.dto.request.CourseReq;
 import com.lms.lms.dto.response.CourseRes;
 import com.lms.lms.dto.response.Default;
@@ -17,6 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -25,8 +27,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/course")
@@ -261,6 +266,7 @@ public class CourseController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
     @PutMapping("/update")
+    @Transactional
     public ResponseEntity<?> updateCourse (@Valid @RequestBody CourseReq course){
         try{
             var id = course.getId();
@@ -297,9 +303,115 @@ public class CourseController {
             }
             coursesRepo.save(isCourseExist);
 
+            if (course.getPrice() != null) {
+                Default pricingError = this.applyPriceToOwnPlan(isCourseExist, course);
+                if (pricingError != null) {
+                    return ResponseEntity.badRequest().body(pricingError);
+                }
+            }
+
             return ResponseEntity.ok().body(new Default("Course Updated Successfully", true, null, null));
         }
         catch (Exception e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
+        }
+    }
+
+    // Repoints the course's own price. Only touches a plan this course alone uses: editing a
+    // plan shared with other courses would reprice them too, so that is refused here and has
+    // to go through /pricing (edit the shared plan) or /course/{id}/pricing (move off it).
+    // Returns null on success, or the error to send back.
+    private Default applyPriceToOwnPlan(Courses course, CourseReq req) {
+        List<Pricing_Plans> attached = pricingRepo.findByCourses_IdOrderByPriceAsc(course.getId());
+
+        if (attached.size() > 1) {
+            return new Default("Course Has " + attached.size() + " Pricing Plans. Use /pricing To Edit One", false, null, null);
+        }
+
+        Pricing_Plans.PlanType planType = req.getPlanType() == null || req.getPlanType().isBlank()
+                ? Pricing_Plans.PlanType.LIFETIME
+                : Pricing_Plans.PlanType.valueOf(req.getPlanType());
+        String currency = req.getCurrency() == null || req.getCurrency().isBlank() ? "INR" : req.getCurrency();
+
+        if (attached.isEmpty()) {
+            Pricing_Plans plan = new Pricing_Plans();
+            plan.setTitle(course.getTitle());
+            plan.setDescription(course.getDescription());
+            plan.setPrice(req.getPrice());
+            plan.setCurrency(currency);
+            plan.setPlanType(planType);
+            plan.getCourses().add(course);
+            pricingRepo.save(plan);
+            return null;
+        }
+
+        Pricing_Plans plan = attached.get(0);
+        long sharedWith = pricingRepo.countAttachedCourses(plan.getId());
+        if (sharedWith > 1) {
+            return new Default("Pricing Plan Is Shared By " + sharedWith + " Courses. Use /pricing To Edit It", false, null, null);
+        }
+
+        plan.setPrice(req.getPrice());
+        plan.setCurrency(currency);
+        plan.setPlanType(planType);
+        pricingRepo.save(plan);
+        return null;
+    }
+
+    // Sets which plans this course is sold on. The list is the whole truth: plans attached
+    // now but missing from it are detached, so a tier swap is one atomic call rather than
+    // a detach and an attach that can fail apart and leave the course free.
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
+    @PutMapping("/{courseId}/pricing")
+    @Transactional
+    public ResponseEntity<Default> updateCoursePricing(@PathVariable Long courseId, @Valid @RequestBody CoursePricingReq req) {
+        try {
+            Courses course = coursesRepo.findById(courseId).orElse(null);
+            if (course == null) {
+                return new ResponseEntity<>(new Default("Course Not Found", false, null, null), HttpStatus.NOT_FOUND);
+            }
+
+            if (!this.canManageCourse(course)) {
+                return ResponseEntity.status(403).body(new Default("You are not authorized to price this course", false, null, null));
+            }
+
+            List<String> requestedIds = req.getPricingPlanIds().stream().distinct().toList();
+
+            List<Pricing_Plans> requested = new ArrayList<>();
+            for (String planId : requestedIds) {
+                Pricing_Plans plan = pricingRepo.findById(planId).orElse(null);
+                if (plan == null) {
+                    return ResponseEntity.badRequest().body(new Default("Pricing Plan Not Found: " + planId, false, null, null));
+                }
+                requested.add(plan);
+            }
+
+            // a course sells one plan per billing type, so the requested set must not collide with itself
+            Set<Pricing_Plans.PlanType> seen = new HashSet<>();
+            for (Pricing_Plans plan : requested) {
+                if (!seen.add(plan.getPlanType())) {
+                    return ResponseEntity.badRequest().body(new Default("More Than One " + plan.getPlanType().name() + " Plan Requested", false, null, null));
+                }
+            }
+
+            for (Pricing_Plans attached : pricingRepo.findByCourses_IdOrderByPriceAsc(courseId)) {
+                if (!requestedIds.contains(attached.getId())) {
+                    attached.getCourses().removeIf(c -> c.getId().equals(courseId));
+                    pricingRepo.save(attached);
+                }
+            }
+
+            for (Pricing_Plans plan : requested) {
+                if (plan.getCourses().stream().noneMatch(c -> c.getId().equals(courseId))) {
+                    plan.getCourses().add(course);
+                    pricingRepo.save(plan);
+                }
+            }
+
+            return ResponseEntity.ok().body(new Default("Course Pricing Updated Successfully", true, null, requestedIds));
+        } catch (Exception e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
     }
