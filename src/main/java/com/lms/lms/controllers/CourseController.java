@@ -22,6 +22,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -244,6 +245,9 @@ public class CourseController {
 
             return ResponseEntity.ok().body(new Default("Course Added Successfully", true, null, null));
         } catch (Exception e) {
+            // this catch swallows the exception, so the transaction would otherwise commit
+            // and leave a priced course with no plan behind the 500
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
     }

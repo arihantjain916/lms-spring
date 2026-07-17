@@ -17,6 +17,7 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -95,6 +96,9 @@ public class CheckoutController {
 
             return ResponseEntity.ok().body(new Default("Checkout Session Created Successfully", true, null, this.toOrderRes(payment)));
         } catch (Exception e) {
+            // this catch swallows the exception, so the transaction would otherwise commit
+            // and leave a PAID payment with no enrollment behind the 500
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return ResponseEntity.internalServerError().body(new Default(e.getMessage(), false, null, null));
         }
     }
