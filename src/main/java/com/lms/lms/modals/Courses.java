@@ -44,9 +44,6 @@ public class Courses {
     @JoinColumn(name = "user_id",  nullable = false)
     private User user;
 
-    @ManyToOne
-    private Pricing_Plans pricingPlan;
-
     @Column(nullable = false, updatable = false)
     @CreationTimestamp
     private Date createdAt = new Date();

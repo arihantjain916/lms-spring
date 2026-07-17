@@ -5,12 +5,16 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.util.Date;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -40,9 +44,17 @@ public class Pricing_Plans {
     @Enumerated(value = EnumType.STRING)
     private PlanType planType;
 
-    @ManyToOne
-    @JoinColumn(name = "course_id", nullable = false)
-    private Courses courses;
+    // a plan is a reusable price point: one plan can be attached to many courses,
+    // and a course can offer several plans (one per PlanType)
+    @ManyToMany
+    @JoinTable(
+            name = "course_pricing_plans",
+            joinColumns = @JoinColumn(name = "pricing_plan_id"),
+            inverseJoinColumns = @JoinColumn(name = "course_id")
+    )
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Set<Courses> courses = new LinkedHashSet<>();
 
     @Column(nullable = false, updatable = false)
     @CreationTimestamp

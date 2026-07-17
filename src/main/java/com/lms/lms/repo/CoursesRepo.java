@@ -37,9 +37,9 @@ public interface CoursesRepo extends JpaRepository<Courses, Long> {
               AND (:featured IS NULL OR c.isFeatured = :featured)
               AND (:minRating IS NULL OR (SELECT AVG(r.rating) FROM Ratings r WHERE r.course.id = c.id) >= :minRating)
               AND (:price IS NULL
-                   OR (:price = 'free' AND COALESCE((SELECT MIN(p.price) FROM Pricing_Plans p WHERE p.courses.id = c.id), 0) = 0)
-                   OR (:price = 'paid' AND COALESCE((SELECT MIN(p.price) FROM Pricing_Plans p WHERE p.courses.id = c.id), 0) > 0))
-              AND (:maxPrice IS NULL OR COALESCE((SELECT MIN(p.price) FROM Pricing_Plans p WHERE p.courses.id = c.id), 0) <= :maxPrice)
+                   OR (:price = 'free' AND COALESCE((SELECT MIN(p.price) FROM Pricing_Plans p JOIN p.courses pc WHERE pc.id = c.id), 0) = 0)
+                   OR (:price = 'paid' AND COALESCE((SELECT MIN(p.price) FROM Pricing_Plans p JOIN p.courses pc WHERE pc.id = c.id), 0) > 0))
+              AND (:maxPrice IS NULL OR COALESCE((SELECT MIN(p.price) FROM Pricing_Plans p JOIN p.courses pc WHERE pc.id = c.id), 0) <= :maxPrice)
             """)
     Page<Courses> searchCourses(@Param("q") String q,
                                 @Param("categoryId") String categoryId,

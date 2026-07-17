@@ -9,7 +9,7 @@ import java.util.Optional;
 
 public interface PricingRepo extends JpaRepository<Pricing_Plans, String> {
 
-    @Query("SELECT MIN(p.price) FROM Pricing_Plans p WHERE p.courses.id = :courseId")
+    @Query("SELECT MIN(p.price) FROM Pricing_Plans p JOIN p.courses c WHERE c.id = :courseId")
     Double getMinPlanPriceByCourseId(Long courseId);
 
     Optional<Pricing_Plans> findFirstByCourses_IdOrderByPriceAsc(Long courseId);
@@ -17,4 +17,10 @@ public interface PricingRepo extends JpaRepository<Pricing_Plans, String> {
     List<Pricing_Plans> findByCourses_IdOrderByPriceAsc(Long courseId);
 
     boolean existsByCourses_IdAndPlanType(Long courseId, Pricing_Plans.PlanType planType);
+
+    boolean existsByIdAndCourses_Id(String planId, Long courseId);
+
+    // a shared plan must not be deleted out from under the other courses using it
+    @Query("SELECT COUNT(c) FROM Pricing_Plans p JOIN p.courses c WHERE p.id = :planId")
+    long countAttachedCourses(String planId);
 }

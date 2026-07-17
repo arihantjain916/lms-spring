@@ -27,8 +27,12 @@ public class CourseReq {
     @Pattern(regexp = "BEGINNER|INTERMEDIATE|ADVANCED|ALL_LEVELS", message = "Level must be one of BEGINNER, INTERMEDIATE, ADVANCED, ALL_LEVELS")
     private String level;
 
-    // Seeds the course's first pricing plan on create only. Omit for a free course.
-    // Later plan changes go through /pricing; these fields are ignored by /course/update.
+    // Prices the course on create only; later plan changes go through /pricing, and
+    // /course/update ignores all three. Omit both for a free course.
+    // Attaches an existing reusable plan. Takes precedence over price/currency/planType.
+    private String pricingPlanId;
+
+    // Creates a new plan for this course alone.
     @Min(value = 0, message = "Price must be 0 or greater")
     private Double price;
 

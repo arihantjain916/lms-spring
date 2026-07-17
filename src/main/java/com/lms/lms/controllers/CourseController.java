@@ -229,10 +229,16 @@ public class CourseController {
             }
             coursesRepo.save(course);
 
-            // a course with no plan is treated as free at checkout, so only seed a plan when a price was given
-            if (courses.getPrice() != null) {
+            // a course with no plan is treated as free at checkout, so only price it when asked
+            if (courses.getPricingPlanId() != null && !courses.getPricingPlanId().isBlank()) {
+                Pricing_Plans plan = pricingRepo.findById(courses.getPricingPlanId()).orElse(null);
+                if (plan == null) {
+                    return ResponseEntity.badRequest().body(new Default("Pricing Plan Not Found", false, null, null));
+                }
+                plan.getCourses().add(course);
+                pricingRepo.save(plan);
+            } else if (courses.getPrice() != null) {
                 Pricing_Plans plan = new Pricing_Plans();
-                plan.setCourses(course);
                 plan.setTitle(course.getTitle());
                 plan.setDescription(course.getDescription());
                 plan.setPrice(courses.getPrice());
@@ -240,6 +246,7 @@ public class CourseController {
                 plan.setPlanType(courses.getPlanType() == null || courses.getPlanType().isBlank()
                         ? Pricing_Plans.PlanType.LIFETIME
                         : Pricing_Plans.PlanType.valueOf(courses.getPlanType()));
+                plan.getCourses().add(course);
                 pricingRepo.save(plan);
             }
 

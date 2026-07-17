@@ -5,13 +5,15 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.Date;
+import java.util.List;
 
 @AllArgsConstructor
 @Getter
 @Setter
 public class PricingPlanRes {
     private String id;
-    private Long courseId;
+    // every course this plan is attached to; a plan is reusable across courses
+    private List<Long> courseIds;
     private String title;
     private String description;
     private String currency;

@@ -64,7 +64,7 @@ public class CheckoutController {
             Pricing_Plans plan;
             if (req.getPricingPlanId() != null && !req.getPricingPlanId().isBlank()) {
                 plan = pricingRepo.findById(req.getPricingPlanId()).orElse(null);
-                if (plan == null || !plan.getCourses().getId().equals(course.getId())) {
+                if (plan == null || !pricingRepo.existsByIdAndCourses_Id(plan.getId(), course.getId())) {
                     return ResponseEntity.badRequest().body(new Default("Pricing Plan Not Found For This Course", false, null, null));
                 }
             } else {
