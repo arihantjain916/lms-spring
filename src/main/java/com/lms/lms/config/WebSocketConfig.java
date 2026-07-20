@@ -1,6 +1,7 @@
 package com.lms.lms.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.config.ChannelRegistration;
@@ -20,6 +21,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Autowired
     private StompAuthChannelInterceptor stompAuthChannelInterceptor;
 
+    @Value("${cors.allowed-origins}")
+    private String allowedOrigins;
+
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
         // /queue backs per-user delivery (convertAndSendToUser); /topic stays for broadcasts
@@ -32,11 +36,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
-                .setAllowedOrigins(
-                        "http://localhost:3000",
-                        "http://localhost:8081",
-                        "http://192.168.1.48:8081"
-                )
+                .setAllowedOrigins(allowedOrigins.split(","))
                 .withSockJS();
 
     }
