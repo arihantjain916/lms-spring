@@ -5,20 +5,26 @@ import com.cloudinary.utils.ObjectUtils;
 import com.lms.lms.GlobalValue.UserDetails;
 import com.lms.lms.dto.request.UpdatePasswordReq;
 import com.lms.lms.dto.request.UpdateUserReq;
+import com.lms.lms.dto.response.CertificateRes;
 import com.lms.lms.dto.response.CourseRes;
 import com.lms.lms.dto.response.Default;
 import com.lms.lms.dto.response.EnrollmentDetailsRes;
 import com.lms.lms.dto.response.MeRes;
+import com.lms.lms.dto.response.OrderRes;
 import com.lms.lms.dto.response.PaginatedResponse;
 import com.lms.lms.mappers.CourseMapper;
 import com.lms.lms.dto.response.WishlistRes;
+import com.lms.lms.modals.Certificate;
 import com.lms.lms.modals.Courses;
 import com.lms.lms.modals.Enrollment;
+import com.lms.lms.modals.Payments;
 import com.lms.lms.modals.Review;
 import com.lms.lms.modals.User;
 import com.lms.lms.modals.Wishlist;
+import com.lms.lms.repo.CertificateRepo;
 import com.lms.lms.repo.CoursesRepo;
 import com.lms.lms.repo.EnrollmentRepo;
+import com.lms.lms.repo.PaymentRepo;
 import com.lms.lms.repo.LessonProgressRepo;
 import com.lms.lms.repo.PricingRepo;
 import com.lms.lms.repo.QuestionHelpfulRepo;
@@ -57,6 +63,12 @@ public class UserController {
 
     @Autowired
     private UserDetails userDetails;
+
+    @Autowired
+    private CertificateRepo certificateRepo;
+
+    @Autowired
+    private PaymentRepo paymentRepo;
 
     @Autowired
     private RefreshTokenController refreshTokenController;
@@ -251,6 +263,101 @@ public class UserController {
                     enrollments.getSize(),
                     enrollments.getTotalElements(),
                     enrollments.getTotalPages()
+            );
+            return ResponseEntity.ok().body(paginatedResponse);
+        } catch (Exception e) {
+            return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Certificates issued to the signed-in user. Lives under /users/me rather
+     * than /certificates because that prefix is public (see PublicRoutes) — a
+     * list keyed off the caller's token must not sit behind an open route.
+     */
+    @PreAuthorize("hasAnyRole('ADMIN', 'STUDENT', 'INSTRUCTOR')")
+    @GetMapping("/me/certificates")
+    public ResponseEntity<?> getMyCertificates(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        try {
+            User user = userDetails.userDetails();
+            if (user == null || user.getIsDeleted()) {
+                return new ResponseEntity<>(new Default("User Does Not Exists", false, null, null), HttpStatus.NOT_FOUND);
+            }
+
+            int pageNumber = page > 0 ? page - 1 : 0;
+            Pageable pageable = PageRequest.of(pageNumber, limit, Sort.by("issuedAt").descending());
+
+            Page<Certificate> certificates = certificateRepo.findByUser_Id(user.getId(), pageable);
+            List<CertificateRes> certificateList = certificates
+                    .stream()
+                    .map(certificate -> new CertificateRes(
+                            certificate.getId(),
+                            certificate.getCertificateNumber(),
+                            certificate.getUser().getName(),
+                            certificate.getCourse().getTitle(),
+                            certificate.getIssuedAt()
+                    ))
+                    .toList();
+
+            PaginatedResponse<CertificateRes> paginatedResponse = new PaginatedResponse<>(
+                    "Certificates Fetched Successfully",
+                    true,
+                    certificateList,
+                    certificates.getNumber() + 1,
+                    certificates.getSize(),
+                    certificates.getTotalElements(),
+                    certificates.getTotalPages()
+            );
+            return ResponseEntity.ok().body(paginatedResponse);
+        } catch (Exception e) {
+            return new ResponseEntity<>(new Default(e.getMessage(), false, null, null), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /** Orders placed by the signed-in user, newest first. */
+    @PreAuthorize("hasAnyRole('ADMIN', 'STUDENT', 'INSTRUCTOR')")
+    @GetMapping("/me/orders")
+    public ResponseEntity<?> getMyOrders(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        try {
+            User user = userDetails.userDetails();
+            if (user == null || user.getIsDeleted()) {
+                return new ResponseEntity<>(new Default("User Does Not Exists", false, null, null), HttpStatus.NOT_FOUND);
+            }
+
+            int pageNumber = page > 0 ? page - 1 : 0;
+            Pageable pageable = PageRequest.of(pageNumber, limit, Sort.by("createdAt").descending());
+
+            Page<Payments> payments = paymentRepo.findByUser_Id(user.getId(), pageable);
+            List<OrderRes> orderList = payments
+                    .stream()
+                    .map(payment -> new OrderRes(
+                            payment.getId(),
+                            payment.getCourse() != null ? payment.getCourse().getId() : null,
+                            payment.getCourse() != null ? payment.getCourse().getTitle() : null,
+                            payment.getPricingPlan() != null ? payment.getPricingPlan().getId() : null,
+                            payment.getPricingPlan() != null ? payment.getPricingPlan().getTitle() : null,
+                            payment.getAmount(),
+                            payment.getCurrency(),
+                            payment.getStatus().name(),
+                            payment.getPaymentReference(),
+                            payment.getCreatedAt()
+                    ))
+                    .toList();
+
+            PaginatedResponse<OrderRes> paginatedResponse = new PaginatedResponse<>(
+                    "Orders Fetched Successfully",
+                    true,
+                    orderList,
+                    payments.getNumber() + 1,
+                    payments.getSize(),
+                    payments.getTotalElements(),
+                    payments.getTotalPages()
             );
             return ResponseEntity.ok().body(paginatedResponse);
         } catch (Exception e) {

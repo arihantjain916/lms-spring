@@ -12,6 +12,8 @@ public interface PaymentRepo extends JpaRepository<Payments, String> {
 
     Page<Payments> findByStatus(Payments.PaymentStatus status, Pageable pageable);
 
+    Page<Payments> findByUser_Id(String userId, Pageable pageable);
+
     Optional<Payments> findFirstByUser_IdAndCourse_IdAndPricingPlan_IdAndStatusOrderByCreatedAtDesc(
             String userId,
             Long courseId,
